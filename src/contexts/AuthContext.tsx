@@ -26,20 +26,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
+        console.log("Found existing session:", session.user.id);
         // Fetch the user profile to get their role
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
           
+        if (error) {
+          console.error("Error fetching profile:", error);
+        }
+          
         if (profile) {
+          console.log("Found profile with role:", profile.role);
           setUser({
             id: session.user.id,
             email: session.user.email || '',
             role: profile.role as UserRole,
           });
+        } else {
+          console.log("No profile found for user:", session.user.id);
         }
+      } else {
+        console.log("No active session found");
       }
       
       setIsLoading(false);
@@ -50,26 +60,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
+        
         if (event === 'SIGNED_IN' && session) {
           setIsLoading(true);
           
           // Fetch user profile data when signed in
-          const { data: profile } = await supabase
+          const { data: profile, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
             
+          if (error) {
+            console.error("Error fetching profile on auth change:", error);
+          }
+            
           if (profile) {
+            console.log("Setting user with role:", profile.role);
             setUser({
               id: session.user.id,
               email: session.user.email || '',
               role: profile.role as UserRole,
             });
+          } else {
+            console.log("No profile found after sign-in");
           }
           
           setIsLoading(false);
         } else if (event === 'SIGNED_OUT') {
+          console.log("User signed out");
           setUser(null);
         }
       }
@@ -82,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string, role: UserRole) => {
     setIsLoading(true);
+    console.log(`Login attempt with ${email} and role ${role}`);
     
     try {
       // Sign in with Supabase
@@ -91,51 +112,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
+        console.error("Sign in error:", error);
         throw new Error(error.message);
       }
       
       if (!data.user) {
+        console.error("No user returned from authentication");
         throw new Error('No user returned from authentication');
       }
 
+      console.log("Authentication successful, user:", data.user.id);
+
       // Update the user's role if provided
       if (role) {
+        console.log(`Updating user role to ${role}`);
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ role })
           .eq('id', data.user.id);
           
         if (updateError) {
+          console.error("Error updating role:", updateError);
           throw new Error(updateError.message);
         }
       }
       
       // Fetch the updated profile
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single();
         
+      if (profileError) {
+        console.error("Error fetching profile after login:", profileError);
+      }
+        
       if (profile) {
+        console.log("Setting user after login with role:", profile.role);
         setUser({
           id: data.user.id,
           email: data.user.email || '',
           role: profile.role as UserRole,
         });
+      } else {
+        console.log("No profile found after login");
       }
-      
-      setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
       if (error instanceof Error) {
         throw new Error(error.message);
       }
       throw new Error('Login failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
+    console.log("Logging out...");
     await supabase.auth.signOut();
     setUser(null);
   };

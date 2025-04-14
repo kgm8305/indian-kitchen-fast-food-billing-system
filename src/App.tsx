@@ -9,6 +9,7 @@ import { DataProvider } from "@/contexts/DataContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 import Login from "./pages/Login";
+import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import MenuManagement from "./pages/MenuManagement";
 import OrderManagement from "./pages/OrderManagement";
@@ -27,14 +28,9 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
+              <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
-              
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
               
               <Route path="/dashboard" element={
                 <ProtectedRoute>

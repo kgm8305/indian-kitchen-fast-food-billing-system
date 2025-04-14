@@ -10,7 +10,9 @@ const Index = () => {
     // Initialize the database with demo users
     const initDb = async () => {
       try {
+        console.log("Initializing database...");
         await seedDemoUsers();
+        console.log("Database initialization complete.");
       } catch (error) {
         console.error('Error initializing database:', error);
       }

@@ -47,7 +47,20 @@ const LoginForm = () => {
         
         setIsSigningUp(false);
       } else {
-        // Handle login
+        // Handle login with more verbose error handling
+        console.log(`Attempting to login with email: ${email} and role: ${role}`);
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (error) {
+          console.error("Auth error:", error);
+          throw new Error(error.message);
+        }
+        
+        // If we get here, auth succeeded - now update the role if needed
+        console.log("Authentication successful, updating role...");
         await login(email, password, role);
         navigate('/dashboard');
       }
@@ -56,6 +69,8 @@ const LoginForm = () => {
       if (error instanceof Error) {
         message = error.message;
       }
+      
+      console.error("Login/signup error:", message);
       
       toast({
         title: isSigningUp ? "Sign up failed" : "Login failed",

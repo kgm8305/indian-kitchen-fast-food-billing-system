@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import MenuManagement from "./pages/MenuManagement";
 import OrderManagement from "./pages/OrderManagement";
 import NewOrder from "./pages/NewOrder";
+import UserManagement from "./pages/UserManagement";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
@@ -53,6 +54,12 @@ const App = () => (
               <Route path="/new-order" element={
                 <ProtectedRoute allowedRoles={['cashier']}>
                   <NewOrder />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/users" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <UserManagement />
                 </ProtectedRoute>
               } />
               

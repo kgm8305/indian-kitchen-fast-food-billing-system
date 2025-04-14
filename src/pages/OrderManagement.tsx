@@ -21,9 +21,10 @@ const OrderManagement = () => {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   
   useEffect(() => {
-    // Refresh orders when component mounts
+    // Only refresh orders when component mounts, not continuously
     refreshOrders();
-  }, [refreshOrders]);
+    // Remove dependency on refreshOrders to prevent continuous refreshing
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   
   // Filter orders based on search term and status
   const filteredOrders = orders.filter(order => {

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { MenuItem, Order, OrderItem, Customer, OrderStatus } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -45,7 +46,7 @@ const convertDbOrderToAppFormat = (dbOrder: any, orderItems: any[]): Order => {
     id: dbOrder.id,
     items: appOrderItems,
     totalAmount: dbOrder.total_amount,
-    status: dbOrder.status,
+    status: dbOrder.status as OrderStatus,
     timestamp: dbOrder.created_at,
     customer
   };

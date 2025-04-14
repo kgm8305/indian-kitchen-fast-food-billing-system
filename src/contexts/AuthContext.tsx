@@ -22,50 +22,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkSession = async () => {
       setIsLoading(true);
       
-      // Get the current session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        console.log("Found existing session:", session.user.id);
-        // Fetch the user profile to get their role
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (error) {
-          console.error("Error fetching profile:", error);
-        }
-          
-        if (profile) {
-          console.log("Found profile with role:", profile.role);
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            role: profile.role as UserRole,
-          });
-        } else {
-          console.log("No profile found for user:", session.user.id);
-        }
-      } else {
-        console.log("No active session found");
-      }
-      
-      setIsLoading(false);
-    };
-    
-    checkSession();
-    
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.id);
+      try {
+        // Get the current session
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (event === 'SIGNED_IN' && session) {
-          setIsLoading(true);
-          
-          // Fetch user profile data when signed in
+        if (session) {
+          console.log("Found existing session:", session.user.id);
+          // Fetch the user profile to get their role
           const { data: profile, error } = await supabase
             .from('profiles')
             .select('*')
@@ -73,24 +36,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .single();
             
           if (error) {
-            console.error("Error fetching profile on auth change:", error);
+            console.error("Error fetching profile:", error);
           }
             
           if (profile) {
-            console.log("Setting user with role:", profile.role);
+            console.log("Found profile with role:", profile.role);
             setUser({
               id: session.user.id,
               email: session.user.email || '',
               role: profile.role as UserRole,
             });
           } else {
-            console.log("No profile found after sign-in");
+            console.log("No profile found for user:", session.user.id);
           }
-          
-          setIsLoading(false);
+        } else {
+          console.log("No active session found");
+        }
+      } catch (err) {
+        console.error("Session check error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkSession();
+    
+    // Listen for auth state changes - optimized to prevent redundant operations
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
+        
+        if (event === 'SIGNED_IN' && session) {
+          // Only fetch user profile when needed
+          setTimeout(async () => {
+            try {
+              // Fetch user profile data when signed in
+              const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+                
+              if (error) {
+                console.error("Error fetching profile on auth change:", error);
+              }
+                
+              if (profile) {
+                console.log("Setting user with role:", profile.role);
+                setUser({
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  role: profile.role as UserRole,
+                });
+              } else {
+                console.log("No profile found after sign-in");
+              }
+              
+              setIsLoading(false);
+            } catch (err) {
+              console.error("Profile fetch error:", err);
+              setIsLoading(false);
+            }
+          }, 0);
         } else if (event === 'SIGNED_OUT') {
           console.log("User signed out");
           setUser(null);
+          setIsLoading(false);
         }
       }
     );
@@ -105,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log(`Login attempt with ${email} and role ${role}`);
     
     try {
-      // Sign in with Supabase
+      // Sign in with Supabase - simplified for performance
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -123,43 +134,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log("Authentication successful, user:", data.user.id);
 
-      // Update the user's role if provided
+      // Update the user's role if provided - only if needed
       if (role) {
-        console.log(`Updating user role to ${role}`);
-        const { error: updateError } = await supabase
+        const { data: profile } = await supabase
           .from('profiles')
-          .update({ role })
-          .eq('id', data.user.id);
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
           
-        if (updateError) {
-          console.error("Error updating role:", updateError);
-          throw new Error(updateError.message);
+        if (!profile || profile.role !== role) {
+          console.log(`Updating user role to ${role}`);
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ role })
+            .eq('id', data.user.id);
+            
+          if (updateError) {
+            console.error("Error updating role:", updateError);
+            throw new Error(updateError.message);
+          }
         }
       }
       
-      // Fetch the updated profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-        
-      if (profileError) {
-        console.error("Error fetching profile after login:", profileError);
-      }
-        
-      if (profile) {
-        console.log("Setting user after login with role:", profile.role);
-        setUser({
-          id: data.user.id,
-          email: data.user.email || '',
-          role: profile.role as UserRole,
-        });
-      } else {
-        console.log("No profile found after login");
-      }
+      // Set user immediately with data we have to speed up the process
+      setUser({
+        id: data.user.id,
+        email: data.user.email || '',
+        role: role, // Use the role passed to login function for immediate feedback
+      });
     } catch (error) {
-      setIsLoading(false);
       if (error instanceof Error) {
         throw new Error(error.message);
       }
@@ -171,8 +174,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     console.log("Logging out...");
+    setIsLoading(true);
     await supabase.auth.signOut();
     setUser(null);
+    setIsLoading(false);
   };
 
   return (

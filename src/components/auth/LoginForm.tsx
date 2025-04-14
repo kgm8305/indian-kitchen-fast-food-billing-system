@@ -23,12 +23,14 @@ const LoginForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return; // Prevent multiple submissions
+    
     setIsLoading(true);
     
     try {
       if (isSigningUp) {
-        // Handle sign up
-        const { data, error } = await supabase.auth.signUp({
+        // Handle sign up - simplified for performance
+        const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -47,21 +49,13 @@ const LoginForm = () => {
         
         setIsSigningUp(false);
       } else {
-        // Handle login with more verbose error handling
+        // Handle login - direct navigation after login attempt
         console.log(`Attempting to login with email: ${email} and role: ${role}`);
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
         
-        if (error) {
-          console.error("Auth error:", error);
-          throw new Error(error.message);
-        }
-        
-        // If we get here, auth succeeded - now update the role if needed
-        console.log("Authentication successful, updating role...");
+        // Attempt login directly through our login function
         await login(email, password, role);
+        
+        // Navigate immediately after successful login
         navigate('/dashboard');
       }
     } catch (error) {

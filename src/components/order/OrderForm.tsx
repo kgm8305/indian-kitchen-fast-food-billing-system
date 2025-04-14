@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -21,10 +20,8 @@ const OrderForm = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   
-  // Get unique categories from menu items
   const categories = ['All', ...new Set(menuItems.map(item => item.category))];
   
-  // Filter menu items by category
   const filteredItems = activeCategory === 'All' 
     ? menuItems 
     : menuItems.filter(item => item.category === activeCategory);
@@ -33,7 +30,6 @@ const OrderForm = () => {
     const existingItem = cart.find(cartItem => cartItem.menuItemId === item.id);
     
     if (existingItem) {
-      // Update quantity if item already in cart
       setCart(cart.map(cartItem => 
         cartItem.menuItemId === item.id 
           ? { 
@@ -44,7 +40,6 @@ const OrderForm = () => {
           : cartItem
       ));
     } else {
-      // Add new item to cart
       setCart([
         ...cart, 
         {
@@ -62,7 +57,6 @@ const OrderForm = () => {
     const existingItem = cart.find(item => item.menuItemId === itemId);
     
     if (existingItem && existingItem.quantity > 1) {
-      // Decrease quantity if more than 1
       setCart(cart.map(item => 
         item.menuItemId === itemId 
           ? { 
@@ -73,7 +67,6 @@ const OrderForm = () => {
           : item
       ));
     } else {
-      // Remove item from cart
       setCart(cart.filter(item => item.menuItemId !== itemId));
     }
   };
@@ -91,7 +84,6 @@ const OrderForm = () => {
       return;
     }
     
-    // Create customer object if name is provided
     let customer: Customer | undefined;
     if (customerName.trim()) {
       customer = {
@@ -100,7 +92,6 @@ const OrderForm = () => {
       };
     }
     
-    // Create new order
     const newOrder: Omit<Order, 'id' | 'timestamp'> = {
       items: [...cart],
       totalAmount: calculateTotal(),
@@ -217,7 +208,6 @@ const OrderForm = () => {
 
   return (
     <div className="flex flex-col md:flex-row gap-6">
-      {/* Menu Section */}
       <div className="flex-1">
         <Card>
           <CardHeader className="pb-2">
@@ -271,7 +261,6 @@ const OrderForm = () => {
         </Card>
       </div>
       
-      {/* Order Summary Section */}
       <div className="md:w-96">
         <Card>
           <CardHeader className="pb-2">

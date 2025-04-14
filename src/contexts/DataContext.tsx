@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MenuItem, Order, OrderStatus } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -66,7 +65,7 @@ interface DataContextType {
   addMenuItem: (item: Omit<MenuItem, 'id'>) => void;
   updateMenuItem: (id: string, item: Partial<MenuItem>) => void;
   deleteMenuItem: (id: string) => void;
-  createOrder: (order: Omit<Order, 'id' | 'timestamp'>) => void;
+  createOrder: (order: Omit<Order, 'id' | 'timestamp'>) => Order;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
 }
 

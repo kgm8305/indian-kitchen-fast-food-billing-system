@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { MenuItem, Order, OrderItem, Customer } from '@/types';
+import { MenuItem, Order, OrderItem, Customer, OrderStatus } from '@/types';
 import { toast } from '@/hooks/use-toast';
 
 // Convert application order to Supabase format
@@ -194,7 +193,7 @@ export const createOrderInDatabase = async (order: Omit<Order, 'id' | 'timestamp
   }
 };
 
-export const updateOrderStatusInDatabase = async (id: string, status: string): Promise<boolean> => {
+export const updateOrderStatusInDatabase = async (id: string, status: OrderStatus): Promise<boolean> => {
   try {
     console.log(`Updating order ${id} status to ${status}`);
     const { error } = await supabase

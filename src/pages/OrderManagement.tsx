@@ -1,0 +1,90 @@
+
+import { useState } from 'react';
+import { useData } from '@/contexts/DataContext';
+import MainLayout from '@/components/layout/MainLayout';
+import OrderItem from '@/components/order/OrderItem';
+import { Input } from '@/components/ui/input';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { OrderStatus } from '@/types';
+import { Search, Filter } from 'lucide-react';
+
+const OrderManagement = () => {
+  const { orders } = useData();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
+  
+  // Filter orders based on search term and status
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer?.contact.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  return (
+    <MainLayout>
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">Order Management</h1>
+        
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search orders..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="w-full sm:w-48">
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}
+            >
+              <SelectTrigger>
+                <div className="flex items-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filter by status" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Orders</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        {filteredOrders.length === 0 ? (
+          <div className="text-center py-10 bg-white rounded-lg border">
+            <p className="text-muted-foreground">
+              {searchTerm || statusFilter !== 'all' 
+                ? 'No orders match your search criteria' 
+                : 'No orders yet'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredOrders.map(order => (
+              <OrderItem key={order.id} order={order} />
+            ))}
+          </div>
+        )}
+      </div>
+    </MainLayout>
+  );
+};
+
+export default OrderManagement;

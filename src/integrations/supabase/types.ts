@@ -9,7 +9,141 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      menu_items: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          price: number
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          price: number
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          price?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          menu_item_id: string
+          name: string
+          order_id: string
+          price: number
+          quantity: number
+          subtotal: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          menu_item_id: string
+          name: string
+          order_id: string
+          price: number
+          quantity: number
+          subtotal: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          menu_item_id?: string
+          name?: string
+          order_id?: string
+          price?: number
+          quantity?: number
+          subtotal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          customer_contact: string | null
+          customer_name: string | null
+          id: string
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          customer_contact?: string | null
+          customer_name?: string | null
+          id?: string
+          status: string
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          customer_contact?: string | null
+          customer_name?: string | null
+          id?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          role: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          role: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          role?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

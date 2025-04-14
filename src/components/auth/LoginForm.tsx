@@ -9,12 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('cashier');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -24,12 +26,40 @@ const LoginForm = () => {
     setIsLoading(true);
     
     try {
-      await login(email, password, role);
-      navigate('/dashboard');
+      if (isSigningUp) {
+        // Handle sign up
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              role
+            }
+          }
+        });
+        
+        if (error) throw new Error(error.message);
+        
+        toast({
+          title: "Account created",
+          description: "Your account has been created successfully. You can now log in.",
+        });
+        
+        setIsSigningUp(false);
+      } else {
+        // Handle login
+        await login(email, password, role);
+        navigate('/dashboard');
+      }
     } catch (error) {
+      let message = "An error occurred";
+      if (error instanceof Error) {
+        message = error.message;
+      }
+      
       toast({
-        title: "Login failed",
-        description: "Invalid credentials. Please try again.",
+        title: isSigningUp ? "Sign up failed" : "Login failed",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -42,7 +72,7 @@ const LoginForm = () => {
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">Swift Bites</CardTitle>
         <CardDescription className="text-center">
-          Enter your credentials to access the system
+          {isSigningUp ? "Create a new account" : "Enter your credentials to access the system"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -95,16 +125,31 @@ const LoginForm = () => {
             className="w-full bg-brand-orange hover:bg-brand-orange/90"
             disabled={isLoading}
           >
-            {isLoading ? "Logging in..." : "Login"}
+            {isLoading 
+              ? (isSigningUp ? "Creating account..." : "Logging in...")
+              : (isSigningUp ? "Create Account" : "Login")
+            }
           </Button>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col space-y-2">
-        <div className="text-sm text-muted-foreground text-center">
-          <p>Demo accounts:</p>
-          <p>admin@gmail.com | manager@gmail.com | cashier@gmail.com</p>
-          <p>Password: 123456</p>
-        </div>
+        <Button 
+          variant="link" 
+          className="text-sm"
+          onClick={() => setIsSigningUp(!isSigningUp)}
+        >
+          {isSigningUp 
+            ? "Already have an account? Log in" 
+            : "Don't have an account? Sign up"
+          }
+        </Button>
+        {!isSigningUp && (
+          <div className="text-sm text-muted-foreground text-center">
+            <p>Demo accounts:</p>
+            <p>admin@gmail.com | manager@gmail.com | cashier@gmail.com</p>
+            <p>Password: 123456</p>
+          </div>
+        )}
       </CardFooter>
     </Card>
   );

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MenuItem, OrderItem, Order, Customer } from '@/types';
-import { MinusCircle, PlusCircle, Printer, Receipt, ShoppingCart, Trash2 } from 'lucide-react';
+import { MinusCircle, PlusCircle, Printer, Receipt, ShoppingCart, Trash2, Loader2 } from 'lucide-react';
 
 const OrderForm = () => {
   const { menuItems, createOrder } = useData();
@@ -19,6 +19,7 @@ const OrderForm = () => {
   const [customerContact, setCustomerContact] = useState('');
   const [showReceipt, setShowReceipt] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const categories = ['All', ...new Set(menuItems.map(item => item.category))];
   
@@ -79,29 +80,40 @@ const OrderForm = () => {
     return cart.reduce((total, item) => total + item.subtotal, 0);
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (cart.length === 0) {
       return;
     }
     
-    let customer: Customer | undefined;
-    if (customerName.trim()) {
-      customer = {
-        name: customerName.trim(),
-        contact: customerContact.trim()
+    setIsSubmitting(true);
+    
+    try {
+      let customer: Customer | undefined;
+      if (customerName.trim()) {
+        customer = {
+          name: customerName.trim(),
+          contact: customerContact.trim()
+        };
+      }
+      
+      const newOrder: Omit<Order, 'id' | 'timestamp'> = {
+        items: [...cart],
+        totalAmount: calculateTotal(),
+        status: 'pending',
+        customer
       };
+      
+      const createdOrder = await createOrder(newOrder);
+      
+      if (createdOrder) {
+        setCurrentOrder(createdOrder);
+        setShowReceipt(true);
+      }
+    } catch (error) {
+      console.error('Error creating order:', error);
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    const newOrder: Omit<Order, 'id' | 'timestamp'> = {
-      items: [...cart],
-      totalAmount: calculateTotal(),
-      status: 'pending',
-      customer
-    };
-    
-    const createdOrder = createOrder(newOrder);
-    setCurrentOrder(createdOrder);
-    setShowReceipt(true);
   };
   
   const handlePrintReceipt = () => {
@@ -350,10 +362,19 @@ const OrderForm = () => {
               <Button 
                 className="w-full mt-6 bg-brand-orange hover:bg-brand-orange/90"
                 onClick={handlePlaceOrder}
-                disabled={cart.length === 0}
+                disabled={cart.length === 0 || isSubmitting}
               >
-                <Receipt className="h-4 w-4 mr-2" />
-                Place Order & Generate Receipt
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Receipt className="h-4 w-4 mr-2" />
+                    Place Order & Generate Receipt
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>

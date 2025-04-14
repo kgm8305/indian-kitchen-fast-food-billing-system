@@ -1,4 +1,5 @@
 
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,12 +9,18 @@ import {
   PlusCircle, 
   Clock,
   ChefHat,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 
 const CashierDashboard = () => {
-  const { orders, updateOrderStatus } = useData();
+  const { orders, updateOrderStatus, refreshOrders, loading } = useData();
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Refresh orders on component mount
+    refreshOrders();
+  }, [refreshOrders]);
   
   // Get recent orders for this cashier
   const recentOrders = orders
@@ -35,21 +42,35 @@ const CashierDashboard = () => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const handleRefresh = () => {
+    refreshOrders();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Cashier Dashboard</h1>
-        <Button 
-          onClick={() => navigate('/new-order')}
-          className="bg-brand-orange hover:bg-brand-orange/90"
-        >
-          <PlusCircle className="h-4 w-4 mr-2" />
-          New Order
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleRefresh}
+            variant="outline"
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button 
+            onClick={() => navigate('/new-order')}
+            className="bg-brand-orange hover:bg-brand-orange/90"
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            New Order
+          </Button>
+        </div>
       </div>
       
       {/* Order Summary */}
-      <div className="stats-grid grid-cols-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Pending</CardTitle>
@@ -90,7 +111,14 @@ const CashierDashboard = () => {
       <div>
         <h2 className="text-xl font-semibold mb-4">Ready for Pickup</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {inProgressOrders.length > 0 ? (
+          {loading ? (
+            <div className="col-span-full text-center py-6 bg-white rounded-lg border">
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+                <p className="text-muted-foreground">Loading orders...</p>
+              </div>
+            </div>
+          ) : inProgressOrders.length > 0 ? (
             inProgressOrders.map((order) => (
               <Card key={order.id}>
                 <CardHeader className="pb-2">
@@ -144,7 +172,16 @@ const CashierDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {completedOrders.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+                      <p className="text-muted-foreground">Loading orders...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : completedOrders.length > 0 ? (
                 completedOrders.map((order) => (
                   <tr key={order.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import MainLayout from '@/components/layout/MainLayout';
 import OrderItem from '@/components/order/OrderItem';
@@ -12,28 +12,49 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OrderStatus } from '@/types';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const OrderManagement = () => {
-  const { orders } = useData();
+  const { orders, refreshOrders, loading } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
+  
+  useEffect(() => {
+    // Refresh orders when component mounts
+    refreshOrders();
+  }, [refreshOrders]);
   
   // Filter orders based on search term and status
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer?.contact.toLowerCase().includes(searchTerm.toLowerCase());
+      order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer?.contact?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
+  const handleRefresh = () => {
+    refreshOrders();
+  };
+
   return (
     <MainLayout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">Order Management</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Order Management</h1>
+          <Button 
+            onClick={handleRefresh} 
+            variant="outline" 
+            size="sm"
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
         
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
@@ -67,7 +88,14 @@ const OrderManagement = () => {
           </div>
         </div>
         
-        {filteredOrders.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-10 bg-white rounded-lg border">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <RefreshCw className="h-10 w-10 animate-spin text-gray-400" />
+              <p className="text-muted-foreground">Loading orders...</p>
+            </div>
+          </div>
+        ) : filteredOrders.length === 0 ? (
           <div className="text-center py-10 bg-white rounded-lg border">
             <p className="text-muted-foreground">
               {searchTerm || statusFilter !== 'all' 

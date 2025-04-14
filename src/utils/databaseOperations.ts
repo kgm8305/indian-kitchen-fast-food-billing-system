@@ -178,7 +178,7 @@ export const createOrderInDatabase = async (order: Omit<Order, 'id' | 'timestamp
       id: orderData.id,
       items: order.items,
       totalAmount: orderData.total_amount,
-      status: orderData.status,
+      status: orderData.status as OrderStatus,
       timestamp: orderData.created_at,
       customer: order.customer
     };

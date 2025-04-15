@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { MenuItem, Order, OrderItem, Customer, OrderStatus } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -471,4 +472,4 @@ export const deleteMenuItemFromDatabase = async (id: string): Promise<boolean> =
   }
 };
 
-export { fetchOrders, fetchOrdersByDateRange, createOrderInDatabase, updateOrderStatusInDatabase, deleteMenuItemFromDatabase };
+// Export all functions (remove the duplicate export at the end of the file)

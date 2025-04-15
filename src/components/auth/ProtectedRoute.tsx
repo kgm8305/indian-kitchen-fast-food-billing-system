@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types';
+import { toast } from '@/hooks/use-toast';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -21,15 +22,23 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Quick check for unauthorized state to redirect faster
     if (!isLoading) {
       if (!user) {
+        console.log("No user found, redirecting to login");
         navigate('/login');
         return;
       }
       
       if (allowedRoles && !allowedRoles.includes(user.role)) {
+        console.log(`User role ${user.role} not authorized for this page. Allowed roles: ${allowedRoles.join(', ')}`);
+        toast({
+          title: "Access Denied",
+          description: `You don't have permission to access this page. Required role: ${allowedRoles.join(' or ')}`,
+          variant: "destructive",
+        });
         navigate('/unauthorized');
         return;
       }
       
+      console.log(`User authorized with role: ${user.role}`);
       setIsAuthorized(true);
     }
   }, [user, isLoading, navigate, allowedRoles]);

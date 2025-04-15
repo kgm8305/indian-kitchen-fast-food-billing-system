@@ -6,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role: UserRole) => Promise<void>;
+  login: (email: string, password: string, role?: UserRole) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     checkSession();
     
-    // Listen for auth state changes - optimized to prevent redundant operations
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("Auth state changed:", event, session?.user?.id);
@@ -111,12 +111,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = async (email: string, password: string, role: UserRole) => {
+  const login = async (email: string, password: string, role?: UserRole) => {
     setIsLoading(true);
-    console.log(`Login attempt with ${email} and role ${role}`);
+    console.log(`Login attempt with ${email}`);
     
     try {
-      // Sign in with Supabase - simplified for performance
+      // Sign in with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -134,34 +134,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log("Authentication successful, user:", data.user.id);
 
-      // Update the user's role if provided - only if needed
-      if (role) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-          
-        if (!profile || profile.role !== role) {
-          console.log(`Updating user role to ${role}`);
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ role })
-            .eq('id', data.user.id);
-            
-          if (updateError) {
-            console.error("Error updating role:", updateError);
-            throw new Error(updateError.message);
-          }
-        }
+      // Fetch the user's profile to get their correct role from the database
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+        
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        throw new Error(profileError.message);
       }
       
-      // Set user immediately with data we have to speed up the process
+      if (!profile) {
+        console.error("No profile found for user");
+        throw new Error('No profile found for user');
+      }
+      
+      // Set user with the role from their profile - not from login parameter
       setUser({
         id: data.user.id,
         email: data.user.email || '',
-        role: role, // Use the role passed to login function for immediate feedback
+        role: profile.role as UserRole,
       });
+      
+      console.log("User logged in with role:", profile.role);
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(error.message);

@@ -14,7 +14,6 @@ import { supabase } from '@/integrations/supabase/client';
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('cashier');
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
   
@@ -29,13 +28,14 @@ const LoginForm = () => {
     
     try {
       if (isSigningUp) {
-        // Handle sign up - simplified for performance
+        // Handle sign up
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
-              role
+              // Default role for new users is cashier
+              role: 'cashier'
             }
           }
         });
@@ -49,13 +49,13 @@ const LoginForm = () => {
         
         setIsSigningUp(false);
       } else {
-        // Handle login - direct navigation after login attempt
-        console.log(`Attempting to login with email: ${email} and role: ${role}`);
+        // Handle login - only validate credentials, don't manually set role
+        console.log(`Attempting to login with email: ${email}`);
         
-        // Attempt login directly through our login function
-        await login(email, password, role);
+        // Important: When logging in, we don't specify a role - we use the stored role
+        await login(email, password);
         
-        // Navigate immediately after successful login
+        // Navigate after successful login
         navigate('/dashboard');
       }
     } catch (error) {
@@ -108,27 +108,12 @@ const LoginForm = () => {
               required
             />
           </div>
-          <div className="space-y-2">
-            <Label>Select Role</Label>
-            <RadioGroup 
-              value={role} 
-              onValueChange={(value) => setRole(value as UserRole)}
-              className="flex flex-col space-y-1"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="admin" id="admin" />
-                <Label htmlFor="admin" className="cursor-pointer">Admin</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="manager" id="manager" />
-                <Label htmlFor="manager" className="cursor-pointer">Manager</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="cashier" id="cashier" />
-                <Label htmlFor="cashier" className="cursor-pointer">Cashier</Label>
-              </div>
-            </RadioGroup>
-          </div>
+          {isSigningUp && (
+            <div className="text-sm text-muted-foreground">
+              New accounts will be assigned the Cashier role by default.
+              Only Admin can change roles after creation.
+            </div>
+          )}
           <Button 
             type="submit" 
             className="w-full bg-brand-orange hover:bg-brand-orange/90"

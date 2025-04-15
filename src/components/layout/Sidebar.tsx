@@ -30,7 +30,7 @@ const Sidebar = () => {
       label: 'Menu Management', 
       icon: <Coffee className="h-5 w-5" />, 
       href: '/menu', 
-      roles: ['manager']
+      roles: ['manager'] 
     },
     { 
       label: 'Orders', 
@@ -58,10 +58,12 @@ const Sidebar = () => {
     },
   ];
 
-  // Filter items based on user role
+  // Filter items based on user role - strictly enforce role-based access
   const filteredItems = navigationItems.filter(item => 
     item.roles.includes(user.role)
   );
+
+  console.log(`Sidebar: User role is ${user.role}, showing ${filteredItems.length} navigation items`);
 
   return (
     <div className="bg-gray-50 w-64 min-h-screen p-4 border-r">

@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,11 +16,14 @@ import {
 const CashierDashboard = () => {
   const { orders, updateOrderStatus, refreshOrders, loading } = useData();
   const navigate = useNavigate();
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   
   useEffect(() => {
-    // Refresh orders on component mount
+    // Only refresh orders on component mount, not continuously
     refreshOrders();
-  }, [refreshOrders]);
+    setLastRefresh(new Date());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // Get recent orders for this cashier
   const recentOrders = orders
@@ -33,8 +36,8 @@ const CashierDashboard = () => {
   const inProgressOrders = recentOrders.filter(order => order.status === 'in-progress');
   const completedOrders = recentOrders.filter(order => order.status === 'completed').slice(0, 5);
 
-  const handleMarkAsServed = (orderId: string) => {
-    updateOrderStatus(orderId, 'completed');
+  const handleMarkAsServed = async (orderId: string) => {
+    await updateOrderStatus(orderId, 'completed');
   };
 
   const getOrderTime = (timestamp: string) => {
@@ -44,13 +47,21 @@ const CashierDashboard = () => {
 
   const handleRefresh = () => {
     refreshOrders();
+    setLastRefresh(new Date());
+  };
+
+  const formatLastRefreshTime = () => {
+    return lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Cashier Dashboard</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <span className="text-sm text-muted-foreground">
+            Last updated: {formatLastRefreshTime()}
+          </span>
           <Button 
             onClick={handleRefresh}
             variant="outline"

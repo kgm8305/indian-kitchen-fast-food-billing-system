@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { MenuItem } from '@/types';
+import { toast } from '@/hooks/use-toast';
 
 interface MenuFormProps {
   item?: MenuItem;
@@ -22,6 +23,7 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
   const [category, setCategory] = useState(item?.category || FOOD_CATEGORIES[0]);
   const [imageUrl, setImageUrl] = useState(item?.imageUrl || '');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [imagePreview, setImagePreview] = useState(item?.imageUrl || '');
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -39,7 +41,28 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateImage = (url: string) => {
+    // Simple URL validation for images
+    const isValid = /^(http|https):\/\/[^ "]+\.(jpeg|jpg|gif|png|webp)(\?.*)?$/.test(url);
+    return isValid;
+  };
+
+  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setImageUrl(url);
+    
+    if (url && validateImage(url)) {
+      setImagePreview(url);
+      setErrors(prev => ({ ...prev, imageUrl: '' }));
+    } else if (url) {
+      setImagePreview('https://placehold.co/300x300?text=Invalid+Image+URL');
+      setErrors(prev => ({ ...prev, imageUrl: 'Invalid image URL format' }));
+    } else {
+      setImagePreview('');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -52,13 +75,30 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
       imageUrl,
     };
     
-    if (item) {
-      updateMenuItem(item.id, menuItemData);
-    } else {
-      addMenuItem(menuItemData);
+    try {
+      if (item) {
+        await updateMenuItem(item.id, menuItemData);
+        toast({
+          title: "Menu item updated",
+          description: `${name} has been updated successfully.`
+        });
+      } else {
+        await addMenuItem(menuItemData);
+        toast({
+          title: "Menu item added",
+          description: `${name} has been added successfully.`
+        });
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error("Error saving menu item:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save menu item. Please try again.",
+        variant: "destructive"
+      });
     }
-    
-    onClose();
   };
 
   return (
@@ -129,17 +169,17 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
             <Input
               id="imageUrl"
               value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
+              onChange={handleImageUrlChange}
               placeholder="https://example.com/image.jpg"
               className={errors.imageUrl ? 'border-red-500' : ''}
             />
             {errors.imageUrl && <p className="text-xs text-red-500">{errors.imageUrl}</p>}
             
-            {imageUrl && (
+            {imagePreview && (
               <div className="mt-2">
                 <p className="text-sm mb-1">Preview:</p>
                 <img 
-                  src={imageUrl} 
+                  src={imagePreview} 
                   alt="Preview" 
                   className="h-40 w-40 object-cover rounded-md border"
                   onError={(e) => {

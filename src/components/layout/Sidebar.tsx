@@ -30,7 +30,7 @@ const Sidebar = () => {
       label: 'Menu Management', 
       icon: <Coffee className="h-5 w-5" />, 
       href: '/menu', 
-      roles: ['admin']
+      roles: ['manager']
     },
     { 
       label: 'Orders', 
@@ -54,7 +54,7 @@ const Sidebar = () => {
       label: 'Reports', 
       icon: <BarChart className="h-5 w-5" />, 
       href: '/reports', 
-      roles: ['admin', 'manager'] 
+      roles: ['admin'] 
     },
   ];
 

@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MenuItem, Order, OrderStatus } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { fetchMenuItems, fetchOrders, createOrderInDatabase, updateOrderStatusInDatabase } from '@/utils/databaseOperations';
+import { fetchMenuItems, fetchOrders, createOrderInDatabase, updateOrderStatusInDatabase, updateMenuItemInDatabase, addMenuItemToDatabase, deleteMenuItemFromDatabase } from '@/utils/databaseOperations';
 
 // Sample food categories
 export const FOOD_CATEGORIES = [
@@ -12,12 +12,13 @@ export const FOOD_CATEGORIES = [
 interface DataContextType {
   menuItems: MenuItem[];
   orders: Order[];
-  addMenuItem: (item: Omit<MenuItem, 'id'>) => void;
-  updateMenuItem: (id: string, item: Partial<MenuItem>) => void;
-  deleteMenuItem: (id: string) => void;
+  addMenuItem: (item: Omit<MenuItem, 'id'>) => Promise<void>;
+  updateMenuItem: (id: string, item: Partial<MenuItem>) => Promise<void>;
+  deleteMenuItem: (id: string) => Promise<void>;
   createOrder: (order: Omit<Order, 'id' | 'timestamp'>) => Promise<Order | null>;
-  updateOrderStatus: (id: string, status: OrderStatus) => void;
+  updateOrderStatus: (id: string, status: OrderStatus) => Promise<void>;
   refreshOrders: () => Promise<void>;
+  refreshMenuItems: () => Promise<void>;
   loading: boolean;
 }
 
@@ -64,40 +65,90 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const addMenuItem = (item: Omit<MenuItem, 'id'>) => {
-    // Will implement Supabase integration for menu items later
-    const newItem = {
-      ...item,
-      id: Date.now().toString(),
-    };
-    setMenuItems(prev => [...prev, newItem]);
-    toast({
-      title: "Success",
-      description: `${item.name} has been added to the menu.`,
-    });
+  const refreshMenuItems = async () => {
+    setLoading(true);
+    try {
+      const items = await fetchMenuItems();
+      setMenuItems(items);
+    } catch (error) {
+      console.error('Error refreshing menu items:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateMenuItem = (id: string, updates: Partial<MenuItem>) => {
-    // Will implement Supabase integration for menu items later
-    setMenuItems(prev => 
-      prev.map(item => 
-        item.id === id ? { ...item, ...updates } : item
-      )
-    );
-    toast({
-      title: "Success",
-      description: "Menu item has been updated.",
-    });
+  const addMenuItem = async (item: Omit<MenuItem, 'id'>) => {
+    try {
+      setLoading(true);
+      const newItem = await addMenuItemToDatabase(item);
+      if (newItem) {
+        setMenuItems(prev => [...prev, newItem]);
+        toast({
+          title: "Success",
+          description: `${item.name} has been added to the menu.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error adding menu item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add menu item. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteMenuItem = (id: string) => {
-    // Will implement Supabase integration for menu items later
-    const itemName = menuItems.find(item => item.id === id)?.name;
-    setMenuItems(prev => prev.filter(item => item.id !== id));
-    toast({
-      title: "Success",
-      description: `${itemName || 'Item'} has been removed from the menu.`,
-    });
+  const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => {
+    try {
+      setLoading(true);
+      const success = await updateMenuItemInDatabase(id, updates);
+      if (success) {
+        setMenuItems(prev => 
+          prev.map(item => 
+            item.id === id ? { ...item, ...updates } : item
+          )
+        );
+        toast({
+          title: "Success",
+          description: "Menu item has been updated.",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating menu item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update menu item. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteMenuItem = async (id: string) => {
+    try {
+      setLoading(true);
+      const itemName = menuItems.find(item => item.id === id)?.name;
+      const success = await deleteMenuItemFromDatabase(id);
+      if (success) {
+        setMenuItems(prev => prev.filter(item => item.id !== id));
+        toast({
+          title: "Success",
+          description: `${itemName || 'Item'} has been removed from the menu.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting menu item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete menu item. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const createOrder = async (orderData: Omit<Order, 'id' | 'timestamp'>) => {
@@ -130,6 +181,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateOrderStatus = async (id: string, status: OrderStatus) => {
     try {
+      setLoading(true);
       // Update order status in the database
       const success = await updateOrderStatusInDatabase(id, status);
       
@@ -153,6 +205,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Failed to update the order status. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -166,6 +220,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createOrder, 
       updateOrderStatus,
       refreshOrders,
+      refreshMenuItems,
       loading
     }}>
       {children}

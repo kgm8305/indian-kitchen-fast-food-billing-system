@@ -15,6 +15,7 @@ import MenuManagement from "./pages/MenuManagement";
 import OrderManagement from "./pages/OrderManagement";
 import NewOrder from "./pages/NewOrder";
 import UserManagement from "./pages/UserManagement";
+import Reports from "./pages/Reports";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
@@ -40,7 +41,7 @@ const App = () => (
               } />
               
               <Route path="/menu" element={
-                <ProtectedRoute allowedRoles={['admin']}>
+                <ProtectedRoute allowedRoles={['manager']}>
                   <MenuManagement />
                 </ProtectedRoute>
               } />
@@ -60,6 +61,12 @@ const App = () => (
               <Route path="/users" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <UserManagement />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/reports" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Reports />
                 </ProtectedRoute>
               } />
               

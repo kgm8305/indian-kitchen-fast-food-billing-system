@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { MenuItem, Order, OrderItem, Customer, OrderStatus } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -59,7 +58,7 @@ const convertMenuItemToDbFormat = (menuItem: Omit<MenuItem, 'id'>) => {
     description: menuItem.description,
     price: menuItem.price,
     category: menuItem.category,
-    image_url: menuItem.imageUrl
+    image_url: menuItem.imageUrl || 'https://placehold.co/300x300?text=No+Image'
   };
 };
 
@@ -361,6 +360,9 @@ export const addMenuItemToDatabase = async (item: Omit<MenuItem, 'id'>): Promise
     console.log('Adding menu item to database:', item);
     const dbItem = convertMenuItemToDbFormat(item);
     
+    // Console log the full payload for debugging
+    console.log('Database payload:', dbItem);
+    
     const { data, error } = await supabase
       .from('menu_items')
       .insert(dbItem)
@@ -369,11 +371,21 @@ export const addMenuItemToDatabase = async (item: Omit<MenuItem, 'id'>): Promise
     
     if (error) {
       console.error('Error adding menu item:', error);
+      toast({
+        title: "Error saving menu item",
+        description: error.message,
+        variant: "destructive",
+      });
       return null;
     }
 
     if (!data) {
       console.error('No menu item data returned after insert');
+      toast({
+        title: "Error saving menu item",
+        description: "No data returned after item creation.",
+        variant: "destructive",
+      });
       return null;
     }
 
@@ -383,6 +395,11 @@ export const addMenuItemToDatabase = async (item: Omit<MenuItem, 'id'>): Promise
     return convertDbMenuItemToAppFormat(data);
   } catch (error) {
     console.error('Unexpected error adding menu item:', error);
+    toast({
+      title: "Error saving menu item",
+      description: "An unexpected error occurred while saving the menu item.",
+      variant: "destructive",
+    });
     return null;
   }
 };
@@ -402,6 +419,9 @@ export const updateMenuItemInDatabase = async (id: string, updates: Partial<Menu
     // Also update the timestamp
     dbUpdates.updated_at = new Date().toISOString();
     
+    // Log full payload for debugging
+    console.log('Database update payload:', dbUpdates);
+    
     const { error } = await supabase
       .from('menu_items')
       .update(dbUpdates)
@@ -409,6 +429,11 @@ export const updateMenuItemInDatabase = async (id: string, updates: Partial<Menu
     
     if (error) {
       console.error('Error updating menu item:', error);
+      toast({
+        title: "Error updating menu item",
+        description: error.message,
+        variant: "destructive",
+      });
       return false;
     }
 
@@ -416,6 +441,11 @@ export const updateMenuItemInDatabase = async (id: string, updates: Partial<Menu
     return true;
   } catch (error) {
     console.error('Unexpected error updating menu item:', error);
+    toast({
+      title: "Error updating menu item", 
+      description: "An unexpected error occurred while updating the menu item.",
+      variant: "destructive",
+    });
     return false;
   }
 };
@@ -440,3 +470,5 @@ export const deleteMenuItemFromDatabase = async (id: string): Promise<boolean> =
     return false;
   }
 };
+
+export { fetchOrders, fetchOrdersByDateRange, createOrderInDatabase, updateOrderStatusInDatabase, deleteMenuItemFromDatabase };

@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { UserRole } from '@/types';
-import { RefreshCw, Search, UserX, UserCheck } from 'lucide-react';
+import { RefreshCw, Search } from 'lucide-react';
 
 type UserProfile = {
   id: string;
@@ -37,6 +37,7 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('all');
+  const [updatingUsers, setUpdatingUsers] = useState<Set<string>>(new Set());
   
   const fetchUsers = async () => {
     setLoading(true);
@@ -66,7 +67,12 @@ const UserManagement = () => {
   }, []);
   
   const updateUserRole = async (userId: string, newRole: UserRole) => {
+    if (updatingUsers.has(userId)) return; // Prevent multiple updates
+    
+    setUpdatingUsers(prev => new Set(prev).add(userId));
+    
     try {
+      console.log(`Updating user ${userId} to role ${newRole}`);
       const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })
@@ -88,6 +94,12 @@ const UserManagement = () => {
         title: "Error updating role",
         description: "Failed to update user role. Please try again.",
         variant: "destructive",
+      });
+    } finally {
+      setUpdatingUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
       });
     }
   };
@@ -189,6 +201,7 @@ const UserManagement = () => {
                         <Select
                           value={user.role}
                           onValueChange={(value) => updateUserRole(user.id, value as UserRole)}
+                          disabled={updatingUsers.has(user.id)}
                         >
                           <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Select role" />

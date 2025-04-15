@@ -24,6 +24,7 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
   const [imageUrl, setImageUrl] = useState(item?.imageUrl || '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreview, setImagePreview] = useState(item?.imageUrl || '');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -35,16 +36,19 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
       newErrors.price = 'Price must be a positive number';
     }
     if (!category) newErrors.category = 'Category is required';
-    if (!imageUrl.trim()) newErrors.imageUrl = 'Image URL is required';
+    
+    // Make image URL optional but validate if provided
+    if (imageUrl.trim() && !validateImage(imageUrl)) {
+      newErrors.imageUrl = 'Invalid image URL format';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validateImage = (url: string) => {
-    // Simple URL validation for images
-    const isValid = /^(http|https):\/\/[^ "]+\.(jpeg|jpg|gif|png|webp)(\?.*)?$/.test(url);
-    return isValid;
+    // More permissive URL validation for images
+    return url.trim().startsWith('http') || url.trim().startsWith('https');
   };
 
   const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,31 +63,36 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
       setErrors(prev => ({ ...prev, imageUrl: 'Invalid image URL format' }));
     } else {
       setImagePreview('');
+      setErrors(prev => ({ ...prev, imageUrl: '' })); // Clear error if empty
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm() || isSubmitting) return;
+    
+    setIsSubmitting(true);
     
     const menuItemData = {
       name,
       description,
       price: parseFloat(price),
       category,
-      imageUrl,
+      imageUrl: imageUrl || 'https://placehold.co/300x300?text=No+Image',
     };
     
     try {
       if (item) {
         await updateMenuItem(item.id, menuItemData);
+        console.log("Menu item updated successfully:", menuItemData);
         toast({
           title: "Menu item updated",
           description: `${name} has been updated successfully.`
         });
       } else {
         await addMenuItem(menuItemData);
+        console.log("Menu item added successfully:", menuItemData);
         toast({
           title: "Menu item added",
           description: `${name} has been added successfully.`
@@ -98,6 +107,8 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
         description: "Failed to save menu item. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -165,7 +176,7 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="imageUrl">Image URL</Label>
+            <Label htmlFor="imageUrl">Image URL (optional)</Label>
             <Input
               id="imageUrl"
               value={imageUrl}
@@ -183,7 +194,7 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
                   alt="Preview" 
                   className="h-40 w-40 object-cover rounded-md border"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://placehold.co/300x300?text=Invalid+Image';
+                    (e.target as HTMLImageElement).src = 'https://placehold.co/300x300?text=Image+Not+Found';
                   }}
                 />
               </div>
@@ -195,8 +206,12 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
           <Button variant="outline" type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" className="bg-brand-orange hover:bg-brand-orange/90">
-            {item ? 'Update Item' : 'Add Item'}
+          <Button 
+            type="submit" 
+            className="bg-brand-orange hover:bg-brand-orange/90"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Saving...' : (item ? 'Update Item' : 'Add Item')}
           </Button>
         </CardFooter>
       </form>

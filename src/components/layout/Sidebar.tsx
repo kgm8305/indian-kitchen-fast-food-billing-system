@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,14 +9,18 @@ import {
   Coffee, 
   ShoppingCart, 
   BarChart, 
-  MenuSquare
+  MenuSquare,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const Sidebar = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
+  const [collapsed, setCollapsed] = useState(false);
+  
   if (!user) return null;
 
   // Define navigation items based on user role
@@ -65,22 +70,41 @@ const Sidebar = () => {
 
   console.log(`Sidebar: User role is ${user.role}, showing ${filteredItems.length} navigation items`);
 
+  const toggleSidebar = () => {
+    setCollapsed(!collapsed);
+  };
+
   return (
-    <div className="bg-gray-50 w-64 min-h-screen p-4 border-r">
-      <div className="space-y-1">
+    <div className={cn(
+      "bg-gray-50 min-h-screen p-4 border-r transition-all duration-300 flex flex-col relative",
+      collapsed ? "w-20" : "w-64"
+    )}>
+      <Button 
+        variant="ghost" 
+        size="icon"
+        onClick={toggleSidebar}
+        className="absolute -right-3 top-6 h-6 w-6 bg-white border rounded-full shadow-md hover:bg-gray-100"
+      >
+        {collapsed ? 
+          <ChevronRight className="h-4 w-4" /> : 
+          <ChevronLeft className="h-4 w-4" />
+        }
+      </Button>
+      
+      <div className="space-y-1 mt-4">
         {filteredItems.map((item) => (
           <Button
             key={item.href}
             variant={location.pathname === item.href ? "default" : "ghost"}
-            className={`w-full justify-start ${
-              location.pathname === item.href 
-                ? "bg-brand-orange hover:bg-brand-orange/90" 
-                : ""
-            }`}
+            className={cn(
+              "w-full justify-start",
+              location.pathname === item.href ? "bg-brand-orange hover:bg-brand-orange/90" : "",
+              collapsed ? "px-2" : ""
+            )}
             onClick={() => navigate(item.href)}
           >
             {item.icon}
-            <span className="ml-2">{item.label}</span>
+            {!collapsed && <span className="ml-2">{item.label}</span>}
           </Button>
         ))}
       </div>

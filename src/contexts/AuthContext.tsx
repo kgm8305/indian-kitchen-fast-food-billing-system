@@ -6,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role?: UserRole) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -63,11 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log("Auth state changed:", event, session?.user?.id);
         
         if (event === 'SIGNED_IN' && session) {
-          // Only fetch user profile when needed
+          // Delay profile fetching slightly to ensure database is updated
           setTimeout(async () => {
             try {
               // Fetch user profile data when signed in
@@ -79,6 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 
               if (error) {
                 console.error("Error fetching profile on auth change:", error);
+                setIsLoading(false);
+                return;
               }
                 
               if (profile) {
@@ -91,13 +93,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               } else {
                 console.log("No profile found after sign-in");
               }
-              
-              setIsLoading(false);
             } catch (err) {
               console.error("Profile fetch error:", err);
+            } finally {
               setIsLoading(false);
             }
-          }, 0);
+          }, 500);
         } else if (event === 'SIGNED_OUT') {
           console.log("User signed out");
           setUser(null);
@@ -111,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = async (email: string, password: string, role?: UserRole) => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true);
     console.log(`Login attempt with ${email}`);
     
@@ -151,14 +152,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No profile found for user');
       }
       
-      // Set user with the role from their profile - not from login parameter
-      setUser({
+      // Set user with the role from their profile
+      const userWithRole = {
         id: data.user.id,
         email: data.user.email || '',
         role: profile.role as UserRole,
-      });
+      };
+      
+      setUser(userWithRole);
       
       console.log("User logged in with role:", profile.role);
+      
+      // The redirection will be handled by ProtectedRoute after user state is updated
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(error.message);

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useData, FOOD_CATEGORIES } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,7 @@ interface MenuFormProps {
 }
 
 const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
-  const { addMenuItem, updateMenuItem } = useData();
+  const { addMenuItem, updateMenuItem, refreshMenuItems } = useData();
   const [name, setName] = useState(item?.name || '');
   const [description, setDescription] = useState(item?.description || '');
   const [price, setPrice] = useState(item?.price?.toString() || '');
@@ -84,34 +83,39 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
     
     try {
       if (item) {
-        // Fix: Ensure we pass the ID properly and wait for the operation to complete
+        // Update existing item
+        console.log("Updating menu item:", item.id, menuItemData);
         const success = await updateMenuItem(item.id, menuItemData);
-        console.log("Menu item updated successfully:", menuItemData, "Success:", success);
         
         if (success) {
+          // Force refresh of menu items
+          await refreshMenuItems();
+          
           toast({
             title: "Menu item updated",
             description: `${name} has been updated successfully.`
           });
-          // Close the form only after successful update
           onClose();
         } else {
           throw new Error("Failed to update menu item");
         }
       } else {
+        // Add new item
         await addMenuItem(menuItemData);
-        console.log("Menu item added successfully:", menuItemData);
+        // Force refresh of menu items
+        await refreshMenuItems();
+        
         toast({
           title: "Menu item added",
           description: `${name} has been added successfully.`
         });
         onClose();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving menu item:", error);
       toast({
         title: "Error",
-        description: "Failed to save menu item. Please try again.",
+        description: error.message || "Failed to save menu item. Please try again.",
         variant: "destructive"
       });
     } finally {

@@ -58,7 +58,8 @@ const convertMenuItemToDbFormat = (menuItem: Omit<MenuItem, 'id'>) => {
     description: menuItem.description,
     price: menuItem.price,
     category: menuItem.category,
-    image_url: menuItem.imageUrl || 'https://placehold.co/300x300?text=No+Image'
+    image_url: menuItem.imageUrl || 'https://placehold.co/300x300?text=No+Image',
+    updated_at: new Date().toISOString()
   };
 };
 
@@ -393,11 +394,11 @@ export const addMenuItemToDatabase = async (item: Omit<MenuItem, 'id'>): Promise
     
     // Convert to application format and return
     return convertDbMenuItemToAppFormat(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Unexpected error adding menu item:', error);
     toast({
       title: "Error saving menu item",
-      description: "An unexpected error occurred while saving the menu item.",
+      description: error.message || "An unexpected error occurred while saving the menu item.",
       variant: "destructive",
     });
     return null;
@@ -416,13 +417,13 @@ export const updateMenuItemInDatabase = async (id: string, updates: Partial<Menu
     if (updates.category !== undefined) dbUpdates.category = updates.category;
     if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl;
     
-    // Force an update timestamp to ensure changes are applied
+    // Always include updated_at to force an update
     dbUpdates.updated_at = new Date().toISOString();
     
     // Log full payload for debugging
     console.log('Database update payload:', dbUpdates);
     
-    // Fix: Add .select() to return updated data and ensure update operation completes
+    // Use select() to return updated data and ensure update operation completes
     const { data, error } = await supabase
       .from('menu_items')
       .update(dbUpdates)
@@ -447,13 +448,13 @@ export const updateMenuItemInDatabase = async (id: string, updates: Partial<Menu
       return false;
     }
     
-    console.log('Menu item updated successfully');
+    console.log('Menu item updated successfully:', data[0]);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Unexpected error updating menu item:', error);
     toast({
       title: "Error updating menu item", 
-      description: "An unexpected error occurred while updating the menu item.",
+      description: error.message || "An unexpected error occurred while updating the menu item.",
       variant: "destructive",
     });
     return false;

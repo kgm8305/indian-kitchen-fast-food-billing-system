@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -74,22 +73,18 @@ const UserManagement = () => {
     try {
       console.log(`Updating user ${userId} to role ${newRole}`);
       
-      // Fix: Let's explicitly include the role field in the update
-      const { error, data } = await supabase
+      const timestamp = new Date().toISOString();
+      
+      const { error } = await supabase
         .from('profiles')
         .update({ 
           role: newRole,
-          // Add updated_at timestamp to force an update
-          updated_at: new Date().toISOString()
+          created_at: timestamp
         })
-        .eq('id', userId)
-        .select();
+        .eq('id', userId);
       
       if (error) throw error;
       
-      console.log("Update result:", data);
-      
-      // Update local state only after successful database update
       setUsers(prevUsers => prevUsers.map(user => 
         user.id === userId ? { ...user, role: newRole } : user
       ));
@@ -98,11 +93,11 @@ const UserManagement = () => {
         title: "Role Updated",
         description: `User role has been updated to ${newRole}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating user role:', error);
       toast({
         title: "Error updating role",
-        description: "Failed to update user role. Please try again.",
+        description: error.message || "Failed to update user role. Please try again.",
         variant: "destructive",
       });
     } finally {

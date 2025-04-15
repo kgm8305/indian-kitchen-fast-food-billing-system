@@ -68,7 +68,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshMenuItems = async () => {
     setLoading(true);
     try {
+      console.log("Refreshing menu items...");
       const items = await fetchMenuItems();
+      console.log("Refreshed menu items:", items);
       setMenuItems(items);
     } catch (error) {
       console.error('Error refreshing menu items:', error);
@@ -82,11 +84,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       const newItem = await addMenuItemToDatabase(item);
       if (newItem) {
+        // Add to local state
         setMenuItems(prev => [...prev, newItem]);
+        
         toast({
           title: "Success",
           description: `${item.name} has been added to the menu.`,
         });
+        
+        // Refresh to ensure consistency with database
+        await refreshMenuItems();
       }
     } catch (error) {
       console.error('Error adding menu item:', error);
@@ -103,7 +110,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateMenuItem = async (id: string, updates: Partial<MenuItem>): Promise<boolean> => {
     try {
       setLoading(true);
-      // Add explicit logging before the database call
       console.log('Updating menu item in context:', id, updates);
       
       const success = await updateMenuItemInDatabase(id, updates);
@@ -151,6 +157,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: "Success",
           description: `${itemName || 'Item'} has been removed from the menu.`,
         });
+        
+        // Refresh to ensure consistency with database
+        await refreshMenuItems();
       }
     } catch (error) {
       console.error('Error deleting menu item:', error);

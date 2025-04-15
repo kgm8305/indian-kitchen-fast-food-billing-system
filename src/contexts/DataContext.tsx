@@ -13,7 +13,7 @@ interface DataContextType {
   menuItems: MenuItem[];
   orders: Order[];
   addMenuItem: (item: Omit<MenuItem, 'id'>) => Promise<void>;
-  updateMenuItem: (id: string, item: Partial<MenuItem>) => Promise<void>;
+  updateMenuItem: (id: string, item: Partial<MenuItem>) => Promise<boolean>;
   deleteMenuItem: (id: string) => Promise<void>;
   createOrder: (order: Omit<Order, 'id' | 'timestamp'>) => Promise<Order | null>;
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<void>;
@@ -100,21 +100,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => {
+  const updateMenuItem = async (id: string, updates: Partial<MenuItem>): Promise<boolean> => {
     try {
       setLoading(true);
+      // Add explicit logging before the database call
+      console.log('Updating menu item in context:', id, updates);
+      
       const success = await updateMenuItemInDatabase(id, updates);
+      console.log('Database update result:', success);
+      
       if (success) {
+        // Update local state
         setMenuItems(prev => 
           prev.map(item => 
             item.id === id ? { ...item, ...updates } : item
           )
         );
+        
         toast({
           title: "Success",
           description: "Menu item has been updated.",
         });
+        
+        // Force refresh from database to ensure local state matches database
+        await refreshMenuItems();
+        return true;
       }
+      return false;
     } catch (error) {
       console.error('Error updating menu item:', error);
       toast({
@@ -122,6 +134,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Failed to update menu item. Please try again.",
         variant: "destructive",
       });
+      return false;
     } finally {
       setLoading(false);
     }

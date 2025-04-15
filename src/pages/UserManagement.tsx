@@ -73,13 +73,23 @@ const UserManagement = () => {
     
     try {
       console.log(`Updating user ${userId} to role ${newRole}`);
-      const { error } = await supabase
+      
+      // Fix: Let's explicitly include the role field in the update
+      const { error, data } = await supabase
         .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
+        .update({ 
+          role: newRole,
+          // Add updated_at timestamp to force an update
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+        .select();
       
       if (error) throw error;
       
+      console.log("Update result:", data);
+      
+      // Update local state only after successful database update
       setUsers(prevUsers => prevUsers.map(user => 
         user.id === userId ? { ...user, role: newRole } : user
       ));

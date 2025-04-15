@@ -84,12 +84,20 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
     
     try {
       if (item) {
-        await updateMenuItem(item.id, menuItemData);
-        console.log("Menu item updated successfully:", menuItemData);
-        toast({
-          title: "Menu item updated",
-          description: `${name} has been updated successfully.`
-        });
+        // Fix: Ensure we pass the ID properly and wait for the operation to complete
+        const success = await updateMenuItem(item.id, menuItemData);
+        console.log("Menu item updated successfully:", menuItemData, "Success:", success);
+        
+        if (success) {
+          toast({
+            title: "Menu item updated",
+            description: `${name} has been updated successfully.`
+          });
+          // Close the form only after successful update
+          onClose();
+        } else {
+          throw new Error("Failed to update menu item");
+        }
       } else {
         await addMenuItem(menuItemData);
         console.log("Menu item added successfully:", menuItemData);
@@ -97,9 +105,8 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
           title: "Menu item added",
           description: `${name} has been added successfully.`
         });
+        onClose();
       }
-      
-      onClose();
     } catch (error) {
       console.error("Error saving menu item:", error);
       toast({

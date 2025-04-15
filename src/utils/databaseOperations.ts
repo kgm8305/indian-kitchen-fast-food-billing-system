@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { MenuItem, Order, OrderItem, Customer, OrderStatus } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -417,16 +416,18 @@ export const updateMenuItemInDatabase = async (id: string, updates: Partial<Menu
     if (updates.category !== undefined) dbUpdates.category = updates.category;
     if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl;
     
-    // Also update the timestamp
+    // Force an update timestamp to ensure changes are applied
     dbUpdates.updated_at = new Date().toISOString();
     
     // Log full payload for debugging
     console.log('Database update payload:', dbUpdates);
     
-    const { error } = await supabase
+    // Fix: Add .select() to return updated data and ensure update operation completes
+    const { data, error } = await supabase
       .from('menu_items')
       .update(dbUpdates)
-      .eq('id', id);
+      .eq('id', id)
+      .select();
     
     if (error) {
       console.error('Error updating menu item:', error);
@@ -438,6 +439,14 @@ export const updateMenuItemInDatabase = async (id: string, updates: Partial<Menu
       return false;
     }
 
+    // Log the returned data to verify update
+    console.log('Menu item update response:', data);
+    
+    if (!data || data.length === 0) {
+      console.error('No data returned after update, item might not exist');
+      return false;
+    }
+    
     console.log('Menu item updated successfully');
     return true;
   } catch (error) {
@@ -471,5 +480,3 @@ export const deleteMenuItemFromDatabase = async (id: string): Promise<boolean> =
     return false;
   }
 };
-
-// Export all functions (remove the duplicate export at the end of the file)

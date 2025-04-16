@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { MenuItem, Order, OrderItem, Customer, OrderStatus } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -290,10 +291,11 @@ export const createOrderInDatabase = async (order: Omit<Order, 'id' | 'timestamp
 export const updateOrderStatusInDatabase = async (id: string, status: OrderStatus): Promise<boolean> => {
   try {
     console.log(`Updating order ${id} status to ${status}`);
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('orders')
       .update({ status })
-      .eq('id', id);
+      .eq('id', id)
+      .select();
     
     if (error) {
       console.error('Error updating order status:', error);
@@ -305,7 +307,12 @@ export const updateOrderStatusInDatabase = async (id: string, status: OrderStatu
       return false;
     }
 
-    console.log('Order status updated successfully');
+    if (!data || data.length === 0) {
+      console.error('No data returned after status update');
+      return false;
+    }
+
+    console.log('Order status updated successfully:', data);
     return true;
   } catch (error) {
     console.error('Unexpected error updating order status:', error);
@@ -464,17 +471,23 @@ export const updateMenuItemInDatabase = async (id: string, updates: Partial<Menu
 export const deleteMenuItemFromDatabase = async (id: string): Promise<boolean> => {
   try {
     console.log(`Deleting menu item ${id}`);
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('menu_items')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .select();
     
     if (error) {
       console.error('Error deleting menu item:', error);
       return false;
     }
 
-    console.log('Menu item deleted successfully');
+    if (!data || data.length === 0) {
+      console.error('No data returned after delete, item might not exist');
+      return false;
+    }
+
+    console.log('Menu item deleted successfully:', data);
     return true;
   } catch (error) {
     console.error('Unexpected error deleting menu item:', error);

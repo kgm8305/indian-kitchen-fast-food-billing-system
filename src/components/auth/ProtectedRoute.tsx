@@ -27,7 +27,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Quick check for unauthorized state to redirect faster
     if (!user) {
       console.log("No user found, redirecting to login");
-      navigate('/login');
+      navigate('/login', { replace: true });
       return;
     }
     
@@ -42,19 +42,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       });
       
       // Redirect based on user role
-      let redirectPath = '/unauthorized';
-      
-      // Add a slight delay to allow toast to be visible
       setTimeout(() => {
-        if (user.role === 'admin') {
-          navigate('/dashboard');
-        } else if (user.role === 'manager') {
-          navigate('/dashboard');
-        } else if (user.role === 'cashier') {
-          navigate('/dashboard');
-        } else {
-          navigate(redirectPath);
-        }
+        redirectBasedOnRole(user.role);
       }, 500);
       
       return;
@@ -64,6 +53,23 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     setIsAuthorized(true);
     
   }, [user, isLoading, navigate, allowedRoles, location.pathname]);
+
+  const redirectBasedOnRole = (role: UserRole) => {
+    switch(role) {
+      case 'admin':
+        navigate('/dashboard', { replace: true });
+        break;
+      case 'manager':
+        navigate('/menu', { replace: true });
+        break;
+      case 'cashier':
+        navigate('/new-order', { replace: true });
+        break;
+      default:
+        navigate('/unauthorized', { replace: true });
+        break;
+    }
+  };
 
   // Show a simple loading indicator instead of a full-page loader
   if (isLoading) {

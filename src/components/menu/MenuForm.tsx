@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useData, FOOD_CATEGORIES } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,8 +23,15 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
   const [category, setCategory] = useState(item?.category || FOOD_CATEGORIES[0]);
   const [imageUrl, setImageUrl] = useState(item?.imageUrl || '');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [imagePreview, setImagePreview] = useState(item?.imageUrl || '');
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // Initialize image preview when component mounts
+    if (item?.imageUrl) {
+      setImagePreview(item.imageUrl);
+    }
+  }, [item]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -36,16 +44,11 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
     }
     if (!category) newErrors.category = 'Category is required';
     
-    // Make image URL optional but validate if provided
-    if (imageUrl.trim() && !validateImage(imageUrl)) {
-      newErrors.imageUrl = 'Invalid image URL format';
-    }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const validateImage = (url: string) => {
+  const validateImage = (url: string): boolean => {
     // More permissive URL validation for images
     return url.trim().startsWith('http') || url.trim().startsWith('https');
   };
@@ -88,13 +91,13 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
         const success = await updateMenuItem(item.id, menuItemData);
         
         if (success) {
-          // Force refresh of menu items
-          await refreshMenuItems();
-          
           toast({
             title: "Menu item updated",
             description: `${name} has been updated successfully.`
           });
+          
+          // Force refresh of menu items to ensure UI is in sync with database
+          await refreshMenuItems();
           onClose();
         } else {
           throw new Error("Failed to update menu item");
@@ -102,13 +105,14 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
       } else {
         // Add new item
         await addMenuItem(menuItemData);
-        // Force refresh of menu items
-        await refreshMenuItems();
         
         toast({
           title: "Menu item added",
           description: `${name} has been added successfully.`
         });
+        
+        // Force refresh of menu items to ensure UI is in sync with database
+        await refreshMenuItems();
         onClose();
       }
     } catch (error: any) {

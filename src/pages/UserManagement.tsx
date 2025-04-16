@@ -73,20 +73,43 @@ const UserManagement = () => {
     try {
       console.log(`Updating user ${userId} to role ${newRole}`);
       
+      const { data: currentUser, error: fetchError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+        
+      if (fetchError) throw fetchError;
+      
+      if (currentUser && currentUser.role === newRole) {
+        console.log('Role unchanged, skipping update');
+        setUpdatingUsers(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(userId);
+          return newSet;
+        });
+        return;
+      }
+      
       const timestamp = new Date().toISOString();
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update({ 
           role: newRole,
-          created_at: timestamp
+          created_at: timestamp 
         })
-        .eq('id', userId);
+        .eq('id', userId)
+        .select();
       
       if (error) throw error;
       
+      if (!data || data.length === 0) {
+        throw new Error('No data returned from update operation');
+      }
+      
       setUsers(prevUsers => prevUsers.map(user => 
-        user.id === userId ? { ...user, role: newRole } : user
+        user.id === userId ? { ...user, role: newRole, created_at: timestamp } : user
       ));
       
       toast({

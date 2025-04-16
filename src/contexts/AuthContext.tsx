@@ -163,7 +163,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("User logged in with role:", profile.role);
       
-      // The redirection will be handled by ProtectedRoute after user state is updated
+      // Redirect based on user role
+      redirectBasedOnRole(profile.role as UserRole);
+      
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(error.message);
@@ -172,6 +174,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const redirectBasedOnRole = (role: UserRole) => {
+    // This function doesn't actually navigate
+    // It's here to document the expected redirects
+    // Actual redirection happens in ProtectedRoute
+    console.log(`User should be redirected based on role: ${role}`);
+    
+    // The specific paths can be configured here based on requirements
+    // For example:
+    // admin → /dashboard
+    // manager → /menu
+    // cashier → /new-order
   };
 
   const logout = async () => {

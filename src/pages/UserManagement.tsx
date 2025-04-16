@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,6 +74,7 @@ const UserManagement = () => {
     try {
       console.log(`Updating user ${userId} to role ${newRole}`);
       
+      // First check if the role actually changed
       const { data: currentUser, error: fetchError } = await supabase
         .from('profiles')
         .select('role')
@@ -91,31 +93,38 @@ const UserManagement = () => {
         return;
       }
       
-      const timestamp = new Date().toISOString();
-      
+      // Use a direct update rather than trying with timestamps which might cause issues
       const { data, error } = await supabase
         .from('profiles')
-        .update({ 
-          role: newRole,
-          created_at: timestamp 
-        })
+        .update({ role: newRole })
         .eq('id', userId)
         .select();
       
-      if (error) throw error;
-      
-      if (!data || data.length === 0) {
-        throw new Error('No data returned from update operation');
+      if (error) {
+        console.error('DB error updating role:', error);
+        throw new Error(`Database error: ${error.message}`);
       }
       
+      if (!data || data.length === 0) {
+        console.error('No data returned from update operation');
+        throw new Error('Update failed: No data returned');
+      }
+      
+      console.log('Role update successful, returned data:', data);
+      
+      // Update the local state
       setUsers(prevUsers => prevUsers.map(user => 
-        user.id === userId ? { ...user, role: newRole, created_at: timestamp } : user
+        user.id === userId ? { ...user, role: newRole } : user
       ));
       
       toast({
         title: "Role Updated",
         description: `User role has been updated to ${newRole}`,
       });
+      
+      // Force refresh to get the latest data
+      fetchUsers();
+      
     } catch (error: any) {
       console.error('Error updating user role:', error);
       toast({

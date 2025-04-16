@@ -31,6 +31,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return;
     }
     
+    console.log(`Checking authorization for user with role: ${user.role} at path: ${location.pathname}`);
+    console.log(`Allowed roles: ${allowedRoles ? allowedRoles.join(', ') : 'any'}`);
+    
     // If allowedRoles is specified, check if user has permission
     if (allowedRoles && !allowedRoles.includes(user.role)) {
       console.log(`User role ${user.role} not authorized for ${location.pathname}. Allowed roles: ${allowedRoles.join(', ')}`);

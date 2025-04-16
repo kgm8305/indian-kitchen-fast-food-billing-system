@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log("Authentication successful, user:", data.user.id);
 
-      // Fetch the user's profile to get their correct role from the database
+      // Always fetch the latest profile data directly from the database
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -163,8 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("User logged in with role:", profile.role);
       
-      // Redirect based on user role
-      redirectBasedOnRole(profile.role as UserRole);
+      // Redirect based on user role is handled in ProtectedRoute
       
     } catch (error) {
       if (error instanceof Error) {
@@ -181,12 +180,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // It's here to document the expected redirects
     // Actual redirection happens in ProtectedRoute
     console.log(`User should be redirected based on role: ${role}`);
-    
-    // The specific paths can be configured here based on requirements
-    // For example:
-    // admin → /dashboard
-    // manager → /menu
-    // cashier → /new-order
   };
 
   const logout = async () => {

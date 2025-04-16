@@ -41,7 +41,7 @@ const App = () => (
               } />
               
               <Route path="/menu" element={
-                <ProtectedRoute allowedRoles={['manager']}>
+                <ProtectedRoute allowedRoles={['admin', 'manager']}>
                   <MenuManagement />
                 </ProtectedRoute>
               } />
@@ -53,7 +53,7 @@ const App = () => (
               } />
               
               <Route path="/new-order" element={
-                <ProtectedRoute allowedRoles={['cashier']}>
+                <ProtectedRoute allowedRoles={['admin', 'cashier']}>
                   <NewOrder />
                 </ProtectedRoute>
               } />
@@ -65,7 +65,7 @@ const App = () => (
               } />
               
               <Route path="/reports" element={
-                <ProtectedRoute allowedRoles={['admin']}>
+                <ProtectedRoute allowedRoles={['admin', 'manager']}>
                   <Reports />
                 </ProtectedRoute>
               } />

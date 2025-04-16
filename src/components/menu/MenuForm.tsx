@@ -49,20 +49,25 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
   };
 
   const validateImage = (url: string): boolean => {
-    // More permissive URL validation for images
-    return url.trim().startsWith('http') || url.trim().startsWith('https');
+    if (!url.trim()) return true; // Empty is valid since it's optional
+    
+    // Simple URL validation - accept anything starting with http or https
+    // or URLs that might be relative paths
+    return url.trim().startsWith('http') || url.trim().startsWith('https') || url.trim().startsWith('/');
   };
 
   const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const url = e.target.value;
     setImageUrl(url);
     
-    if (url && validateImage(url)) {
-      setImagePreview(url);
-      setErrors(prev => ({ ...prev, imageUrl: '' }));
-    } else if (url) {
-      setImagePreview('https://placehold.co/300x300?text=Invalid+Image+URL');
-      setErrors(prev => ({ ...prev, imageUrl: 'Invalid image URL format' }));
+    if (url) {
+      if (validateImage(url)) {
+        setImagePreview(url);
+        setErrors(prev => ({ ...prev, imageUrl: '' }));
+      } else {
+        setImagePreview('https://placehold.co/300x300?text=Invalid+Image+URL');
+        setErrors(prev => ({ ...prev, imageUrl: 'Invalid image URL format' }));
+      }
     } else {
       setImagePreview('');
       setErrors(prev => ({ ...prev, imageUrl: '' })); // Clear error if empty

@@ -424,38 +424,46 @@ export const updateMenuItemInDatabase = async (id: string, updates: Partial<Menu
     if (updates.category !== undefined) dbUpdates.category = updates.category;
     if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl;
     
-    // Always include updated_at to force an update
+    // Set updated_at timestamp
     dbUpdates.updated_at = new Date().toISOString();
     
     // Log full payload for debugging
     console.log('Database update payload:', dbUpdates);
     
-    // Use select() to return updated data and ensure update operation completes
-    const { data, error } = await supabase
+    // Replace the update and select in one operation with separate operations for reliability
+    const { error: updateError } = await supabase
       .from('menu_items')
       .update(dbUpdates)
-      .eq('id', id)
-      .select();
+      .eq('id', id);
     
-    if (error) {
-      console.error('Error updating menu item:', error);
+    if (updateError) {
+      console.error('Error updating menu item:', updateError);
       toast({
         title: "Error updating menu item",
-        description: error.message,
+        description: updateError.message,
         variant: "destructive",
       });
       return false;
     }
 
-    // Log the returned data to verify update
-    console.log('Menu item update response:', data);
+    // Verify the update with a separate select
+    const { data: verifyData, error: verifyError } = await supabase
+      .from('menu_items')
+      .select('*')
+      .eq('id', id)
+      .single();
     
-    if (!data || data.length === 0) {
-      console.error('No data returned after update, item might not exist');
+    if (verifyError) {
+      console.error('Error verifying menu item update:', verifyError);
       return false;
     }
     
-    console.log('Menu item updated successfully:', data[0]);
+    if (!verifyData) {
+      console.error('Could not verify menu item update - item not found');
+      return false;
+    }
+    
+    console.log('Menu item update verified:', verifyData);
     return true;
   } catch (error: any) {
     console.error('Unexpected error updating menu item:', error);

@@ -163,8 +163,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("User logged in with role:", profile.role);
       
-      // Redirect based on user role is handled in ProtectedRoute
-      
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(error.message);
@@ -173,13 +171,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const redirectBasedOnRole = (role: UserRole) => {
-    // This function doesn't actually navigate
-    // It's here to document the expected redirects
-    // Actual redirection happens in ProtectedRoute
-    console.log(`User should be redirected based on role: ${role}`);
   };
 
   const logout = async () => {

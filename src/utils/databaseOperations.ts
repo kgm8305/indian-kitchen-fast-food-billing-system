@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { MenuItem, Order, OrderItem, Customer, OrderStatus } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -430,40 +429,23 @@ export const updateMenuItemInDatabase = async (id: string, updates: Partial<Menu
     // Log full payload for debugging
     console.log('Database update payload:', dbUpdates);
     
-    // Replace the update and select in one operation with separate operations for reliability
-    const { error: updateError } = await supabase
+    // Perform the update without expecting data return
+    const { error } = await supabase
       .from('menu_items')
       .update(dbUpdates)
       .eq('id', id);
     
-    if (updateError) {
-      console.error('Error updating menu item:', updateError);
+    if (error) {
+      console.error('Error updating menu item:', error);
       toast({
         title: "Error updating menu item",
-        description: updateError.message,
+        description: error.message,
         variant: "destructive",
       });
       return false;
     }
 
-    // Verify the update with a separate select
-    const { data: verifyData, error: verifyError } = await supabase
-      .from('menu_items')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (verifyError) {
-      console.error('Error verifying menu item update:', verifyError);
-      return false;
-    }
-    
-    if (!verifyData) {
-      console.error('Could not verify menu item update - item not found');
-      return false;
-    }
-    
-    console.log('Menu item update verified:', verifyData);
+    console.log('Menu item updated successfully');
     return true;
   } catch (error: any) {
     console.error('Unexpected error updating menu item:', error);

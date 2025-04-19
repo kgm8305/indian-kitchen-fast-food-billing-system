@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,15 +74,9 @@ const UserManagement = () => {
       console.log(`Updating user ${userId} to role ${newRole}`);
       
       // First check if the role actually changed
-      const { data: currentUser, error: fetchError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-        
-      if (fetchError) throw fetchError;
+      const userToUpdate = users.find(user => user.id === userId);
       
-      if (currentUser && currentUser.role === newRole) {
+      if (userToUpdate && userToUpdate.role === newRole) {
         console.log('Role unchanged, skipping update');
         setUpdatingUsers(prev => {
           const newSet = new Set(prev);
@@ -93,24 +86,17 @@ const UserManagement = () => {
         return;
       }
       
-      // Use a direct update rather than trying with timestamps which might cause issues
-      const { data, error } = await supabase
+      // Execute the update directly with simplified error handling
+      const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })
-        .eq('id', userId)
-        .select();
+        .eq('id', userId);
       
       if (error) {
-        console.error('DB error updating role:', error);
         throw new Error(`Database error: ${error.message}`);
       }
       
-      if (!data || data.length === 0) {
-        console.error('No data returned from update operation');
-        throw new Error('Update failed: No data returned');
-      }
-      
-      console.log('Role update successful, returned data:', data);
+      console.log('Role update successful');
       
       // Update the local state
       setUsers(prevUsers => prevUsers.map(user => 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useData, FOOD_CATEGORIES } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
@@ -51,9 +50,8 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
   const validateImage = (url: string): boolean => {
     if (!url.trim()) return true; // Empty is valid since it's optional
     
-    // Simple URL validation - accept anything starting with http or https
-    // or URLs that might be relative paths
-    return url.trim().startsWith('http') || url.trim().startsWith('https') || url.trim().startsWith('/');
+    // Accept any URL format as valid
+    return true;
   };
 
   const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {

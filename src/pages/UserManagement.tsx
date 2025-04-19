@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -88,22 +87,17 @@ const UserManagement = () => {
         return;
       }
       
-      // Execute the update with proper error handling
-      const { data, error } = await supabase
+      // Fix: Directly perform update without expecting data return
+      const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })
-        .eq('id', userId)
-        .select('*');
+        .eq('id', userId);
       
       if (error) {
         throw new Error(`Database error: ${error.message}`);
       }
       
-      if (!data || data.length === 0) {
-        throw new Error('No data returned from update operation');
-      }
-      
-      console.log('Role update successful, returned data:', data);
+      console.log('Role update successful');
       
       // Update the local state immediately
       setUsers(prevUsers => prevUsers.map(user => 

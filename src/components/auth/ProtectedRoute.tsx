@@ -18,6 +18,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   
   // Function to check authorization
   const checkAuthorization = async () => {
@@ -25,8 +26,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return; // Wait until auth is loaded
     }
 
-    // Make sure we have the latest user profile
-    await refreshUserProfile();
+    // Only refresh user profile once during initial load
+    if (!hasCheckedAuth) {
+      await refreshUserProfile();
+      setHasCheckedAuth(true);
+    }
     
     // Re-check user after profile refresh
     if (!user) {
@@ -62,7 +66,36 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   
   useEffect(() => {
     checkAuthorization();
-  }, [user, isLoading, navigate, allowedRoles, location.pathname]);
+  }, [user, isLoading]);
+
+  // Add separate effect to handle path changes
+  useEffect(() => {
+    if (hasCheckedAuth && user) {
+      // Reset authorization on path change
+      setIsAuthorized(false);
+      
+      // Check if user has permission for new path
+      if (allowedRoles && !allowedRoles.includes(user.role)) {
+        console.log(`User role ${user.role} not authorized for ${location.pathname}. Allowed roles: ${allowedRoles.join(', ')}`);
+        
+        toast({
+          title: "Access Denied",
+          description: `You don't have permission to access this page. Required role: ${allowedRoles.join(' or ')}`,
+          variant: "destructive",
+        });
+        
+        // Redirect based on user role
+        setTimeout(() => {
+          redirectBasedOnRole(user.role);
+        }, 500);
+        
+        return;
+      }
+      
+      console.log(`User authorized with role: ${user.role} for path: ${location.pathname}`);
+      setIsAuthorized(true);
+    }
+  }, [location.pathname, allowedRoles]);
 
   const redirectBasedOnRole = (role: UserRole) => {
     switch(role) {

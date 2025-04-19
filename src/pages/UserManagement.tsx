@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -99,10 +100,12 @@ const UserManagement = () => {
       
       console.log('Role update successful');
       
-      // Update the local state immediately
-      setUsers(prevUsers => prevUsers.map(user => 
-        user.id === userId ? { ...user, role: newRole } : user
-      ));
+      // Update the local state immediately - Make sure this is actually updating the UI
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.id === userId ? { ...user, role: newRole } : user
+        )
+      );
       
       toast({
         title: "Role Updated",
@@ -110,7 +113,7 @@ const UserManagement = () => {
       });
       
       // Force refresh to ensure we get the latest data
-      fetchUsers();
+      await fetchUsers();
       
     } catch (error: any) {
       console.error('Error updating user role:', error);

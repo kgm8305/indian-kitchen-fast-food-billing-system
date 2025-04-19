@@ -9,7 +9,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
-  refreshUserProfile: () => Promise<void>; // Added refresh function
+  refreshUserProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,7 +52,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setIsLoading(true);
     try {
-      const profile = await fetchUserProfile(user.id);
+      // Disable caching to ensure fresh data
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (error) {
+        console.error("Error refreshing profile:", error);
+        return;
+      }
+      
       if (profile) {
         setUser({
           id: user.id,

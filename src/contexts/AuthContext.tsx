@@ -9,6 +9,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
+  refreshUserProfile: () => Promise<void>; // Added refresh function
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,6 +17,56 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Function to fetch user profile from the database
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      console.log("Fetching user profile for:", userId);
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (error) {
+        console.error("Error fetching profile:", error);
+        return null;
+      }
+        
+      if (profile) {
+        console.log("Found profile with role:", profile.role);
+        return profile;
+      } else {
+        console.log("No profile found for user:", userId);
+        return null;
+      }
+    } catch (err) {
+      console.error("Profile fetch error:", err);
+      return null;
+    }
+  };
+
+  // Function to refresh user profile (can be called when role changes)
+  const refreshUserProfile = async () => {
+    if (!user?.id) return;
+    
+    setIsLoading(true);
+    try {
+      const profile = await fetchUserProfile(user.id);
+      if (profile) {
+        setUser({
+          id: user.id,
+          email: user.email,
+          role: profile.role as UserRole,
+        });
+        console.log("User profile refreshed with role:", profile.role);
+      }
+    } catch (err) {
+      console.error("Error refreshing user profile:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Check for existing session on page load
@@ -29,25 +80,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session) {
           console.log("Found existing session:", session.user.id);
           // Fetch the user profile to get their role
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (error) {
-            console.error("Error fetching profile:", error);
-          }
+          const profile = await fetchUserProfile(session.user.id);
             
           if (profile) {
-            console.log("Found profile with role:", profile.role);
             setUser({
               id: session.user.id,
               email: session.user.email || '',
               role: profile.role as UserRole,
             });
-          } else {
-            console.log("No profile found for user:", session.user.id);
           }
         } else {
           console.log("No active session found");
@@ -71,17 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setTimeout(async () => {
             try {
               // Fetch user profile data when signed in
-              const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-                
-              if (error) {
-                console.error("Error fetching profile on auth change:", error);
-                setIsLoading(false);
-                return;
-              }
+              const profile = await fetchUserProfile(session.user.id);
                 
               if (profile) {
                 console.log("Setting user with role:", profile.role);
@@ -182,7 +212,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      isLoading,
+      refreshUserProfile 
+    }}>
       {children}
     </AuthContext.Provider>
   );

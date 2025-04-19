@@ -429,11 +429,12 @@ export const updateMenuItemInDatabase = async (id: string, updates: Partial<Menu
     // Log full payload for debugging
     console.log('Database update payload:', dbUpdates);
     
-    // Perform the update without expecting data return
-    const { error } = await supabase
+    // Perform the update and return the updated record
+    const { data, error } = await supabase
       .from('menu_items')
       .update(dbUpdates)
-      .eq('id', id);
+      .eq('id', id)
+      .select();
     
     if (error) {
       console.error('Error updating menu item:', error);
@@ -445,7 +446,17 @@ export const updateMenuItemInDatabase = async (id: string, updates: Partial<Menu
       return false;
     }
 
-    console.log('Menu item updated successfully');
+    if (!data || data.length === 0) {
+      console.error('No data returned after update, item might not exist');
+      toast({
+        title: "Error updating menu item",
+        description: "Item could not be found or updated",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    console.log('Menu item updated successfully:', data);
     return true;
   } catch (error: any) {
     console.error('Unexpected error updating menu item:', error);

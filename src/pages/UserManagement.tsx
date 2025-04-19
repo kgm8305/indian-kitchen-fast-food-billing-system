@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,6 +49,7 @@ const UserManagement = () => {
       
       if (error) throw error;
       
+      console.log("Fetched users:", data);
       setUsers(data as UserProfile[]);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -86,19 +88,24 @@ const UserManagement = () => {
         return;
       }
       
-      // Execute the update directly with simplified error handling
-      const { error } = await supabase
+      // Execute the update with proper error handling
+      const { data, error } = await supabase
         .from('profiles')
         .update({ role: newRole })
-        .eq('id', userId);
+        .eq('id', userId)
+        .select('*');
       
       if (error) {
         throw new Error(`Database error: ${error.message}`);
       }
       
-      console.log('Role update successful');
+      if (!data || data.length === 0) {
+        throw new Error('No data returned from update operation');
+      }
       
-      // Update the local state
+      console.log('Role update successful, returned data:', data);
+      
+      // Update the local state immediately
       setUsers(prevUsers => prevUsers.map(user => 
         user.id === userId ? { ...user, role: newRole } : user
       ));
@@ -108,7 +115,7 @@ const UserManagement = () => {
         description: `User role has been updated to ${newRole}`,
       });
       
-      // Force refresh to get the latest data
+      // Force refresh to ensure we get the latest data
       fetchUsers();
       
     } catch (error: any) {
@@ -118,6 +125,9 @@ const UserManagement = () => {
         description: error.message || "Failed to update user role. Please try again.",
         variant: "destructive",
       });
+      
+      // Force refresh to get the latest data
+      fetchUsers();
     } finally {
       setUpdatingUsers(prev => {
         const newSet = new Set(prev);

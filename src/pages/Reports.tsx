@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DailyReports from '@/components/reports/DailyReports';
 import LiveReports from '@/components/reports/LiveReports';
+import OrderReports from '@/components/reports/OrderReports';
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState<string>('daily');
@@ -18,9 +19,10 @@ const Reports = () => {
         </div>
         
         <Tabs defaultValue="daily" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="daily">Daily Reports</TabsTrigger>
             <TabsTrigger value="live">Live Reports</TabsTrigger>
+            <TabsTrigger value="orders">Order Reports</TabsTrigger>
           </TabsList>
           
           <TabsContent value="daily">
@@ -29,6 +31,10 @@ const Reports = () => {
           
           <TabsContent value="live">
             <LiveReports />
+          </TabsContent>
+          
+          <TabsContent value="orders">
+            <OrderReports />
           </TabsContent>
         </Tabs>
       </div>

@@ -26,7 +26,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return; // Wait until auth is loaded
     }
 
-    // Only refresh user profile once during initial load
+    // Always refresh user profile when route components are loaded
+    // This ensures we have the latest role information
     if (!hasCheckedAuth) {
       await refreshUserProfile();
       setHasCheckedAuth(true);
@@ -74,26 +75,30 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       // Reset authorization on path change
       setIsAuthorized(false);
       
-      // Check if user has permission for new path
-      if (allowedRoles && !allowedRoles.includes(user.role)) {
-        console.log(`User role ${user.role} not authorized for ${location.pathname}. Allowed roles: ${allowedRoles.join(', ')}`);
+      // Always refresh user profile when the path changes
+      // This ensures we have the latest role information
+      refreshUserProfile().then(() => {
+        // Check if user has permission for new path
+        if (allowedRoles && !allowedRoles.includes(user.role)) {
+          console.log(`User role ${user.role} not authorized for ${location.pathname}. Allowed roles: ${allowedRoles.join(', ')}`);
+          
+          toast({
+            title: "Access Denied",
+            description: `You don't have permission to access this page. Required role: ${allowedRoles.join(' or ')}`,
+            variant: "destructive",
+          });
+          
+          // Redirect based on user role
+          setTimeout(() => {
+            redirectBasedOnRole(user.role);
+          }, 500);
+          
+          return;
+        }
         
-        toast({
-          title: "Access Denied",
-          description: `You don't have permission to access this page. Required role: ${allowedRoles.join(' or ')}`,
-          variant: "destructive",
-        });
-        
-        // Redirect based on user role
-        setTimeout(() => {
-          redirectBasedOnRole(user.role);
-        }, 500);
-        
-        return;
-      }
-      
-      console.log(`User authorized with role: ${user.role} for path: ${location.pathname}`);
-      setIsAuthorized(true);
+        console.log(`User authorized with role: ${user.role} for path: ${location.pathname}`);
+        setIsAuthorized(true);
+      });
     }
   }, [location.pathname, allowedRoles]);
 

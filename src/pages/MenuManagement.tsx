@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import MainLayout from '@/components/layout/MainLayout';
 import MenuItem from '@/components/menu/MenuItem';
@@ -10,9 +10,14 @@ import { PlusCircle, Search } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 const MenuManagement = () => {
-  const { menuItems } = useData();
+  const { menuItems, refreshMenuItems } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
+  
+  // Refresh menu items when component mounts
+  useEffect(() => {
+    refreshMenuItems();
+  }, []);
   
   // Filter menu items based on search term
   const filteredItems = menuItems.filter(item => 
@@ -20,6 +25,12 @@ const MenuManagement = () => {
     item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleCloseDialog = async () => {
+    setShowAddDialog(false);
+    // Refresh menu items after dialog is closed to ensure new items are displayed
+    await refreshMenuItems();
+  };
 
   return (
     <MainLayout>
@@ -65,7 +76,7 @@ const MenuManagement = () => {
       {/* Add Menu Item Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent>
-          <MenuForm onClose={() => setShowAddDialog(false)} />
+          <MenuForm onClose={handleCloseDialog} />
         </DialogContent>
       </Dialog>
     </MainLayout>

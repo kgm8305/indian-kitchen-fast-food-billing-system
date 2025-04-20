@@ -8,18 +8,23 @@ const Header = () => {
   const { user, logout, refreshUserProfile } = useAuth();
   const navigate = useNavigate();
 
+  // Early return with null if no user context is available
+  if (!user) {
+    console.log('Header: No user found in context');
+    return null;
+  }
+
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
   
   const handleRefreshProfile = async () => {
+    console.log('Header: Refreshing user profile');
     if (user) {
       await refreshUserProfile();
     }
   };
-
-  if (!user) return null;
 
   return (
     <header className="bg-white border-b sticky top-0 z-10">

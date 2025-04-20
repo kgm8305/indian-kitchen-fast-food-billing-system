@@ -1,16 +1,22 @@
 
 import { useData } from '@/contexts/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { OrderStatus } from '@/types';
 import { 
   BarChart, 
   ShoppingCart, 
   DollarSign, 
-  Coffee 
+  Coffee,
+  Download
 } from 'lucide-react';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminDashboard = () => {
   const { menuItems, orders } = useData();
+  const { toast } = useToast();
+  const [downloadingReport, setDownloadingReport] = useState(false);
 
   // Calculate summary statistics
   const totalOrders = orders.length;
@@ -41,12 +47,76 @@ const AdminDashboard = () => {
     }
   };
 
+  const downloadSalesReport = () => {
+    try {
+      setDownloadingReport(true);
+      
+      // Create headers for CSV
+      const headers = ['Order ID', 'Date', 'Customer', 'Amount', 'Status'];
+      
+      // Prepare data rows for CSV
+      const csvRows = [
+        headers.join(','),
+        ...orders.map(order => {
+          const date = new Date(order.timestamp).toLocaleDateString();
+          const customer = order.customer?.name || 'Walk-in Customer';
+          const amount = order.totalAmount.toFixed(2);
+          
+          return [
+            order.id,
+            date,
+            `"${customer}"`, // Add quotes to handle commas in names
+            amount,
+            order.status
+          ].join(',');
+        })
+      ];
+      
+      // Join rows with newlines to create CSV content
+      const csvContent = csvRows.join('\n');
+      
+      // Create a Blob and download link
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `sales-report-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Report Downloaded",
+        description: "Sales report has been downloaded successfully",
+      });
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      toast({
+        title: "Error Downloading Report",
+        description: "Failed to download sales report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        <Button 
+          onClick={downloadSalesReport} 
+          variant="outline"
+          disabled={downloadingReport}
+        >
+          <Download className={`h-4 w-4 mr-2 ${downloadingReport ? 'animate-spin' : ''}`} />
+          Download Sales Report
+        </Button>
+      </div>
       
       {/* Statistics Cards */}
-      <div className="stats-grid">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Orders</CardTitle>

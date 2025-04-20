@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Table, 
   TableHeader, 
@@ -22,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { UserRole } from '@/types';
-import { RefreshCw, Search } from 'lucide-react';
+import { RefreshCw, Search, Download } from 'lucide-react';
 
 type UserProfile = {
   id: string;
@@ -33,11 +34,13 @@ type UserProfile = {
 
 const UserManagement = () => {
   const { toast } = useToast();
+  const { user: currentUser, refreshUserProfile } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('all');
   const [updatingUsers, setUpdatingUsers] = useState<Set<string>>(new Set());
+  const [downloadingReport, setDownloadingReport] = useState(false);
   
   const fetchUsers = async () => {
     setLoading(true);
@@ -88,7 +91,7 @@ const UserManagement = () => {
         return;
       }
       
-      // Fix: Directly perform update without expecting data return
+      // Update the profile in the database
       const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })
@@ -100,7 +103,7 @@ const UserManagement = () => {
       
       console.log('Role update successful');
       
-      // Update the local state immediately - Make sure this is actually updating the UI
+      // Update the local state immediately
       setUsers(prevUsers => 
         prevUsers.map(user => 
           user.id === userId ? { ...user, role: newRole } : user
@@ -111,6 +114,12 @@ const UserManagement = () => {
         title: "Role Updated",
         description: `User role has been updated to ${newRole}`,
       });
+      
+      // If the user being updated is the current user, refresh their profile
+      if (currentUser && userId === currentUser.id) {
+        console.log("Updating current user's role, refreshing profile");
+        await refreshUserProfile();
+      }
       
       // Force refresh to ensure we get the latest data
       await fetchUsers();
@@ -134,6 +143,59 @@ const UserManagement = () => {
     }
   };
   
+  const downloadUserReport = async () => {
+    try {
+      setDownloadingReport(true);
+      
+      // Fetch all users for the report
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Prepare CSV data
+      const headers = ['Email', 'Role', 'Created At'];
+      const csvRows = [
+        headers.join(','),
+        ...data.map((user: UserProfile) => {
+          const created = new Date(user.created_at).toLocaleDateString();
+          return [
+            user.email,
+            user.role,
+            created
+          ].join(',');
+        })
+      ];
+      const csvContent = csvRows.join('\n');
+      
+      // Create download link
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `user-report-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Report Downloaded",
+        description: "User report has been downloaded successfully",
+      });
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      toast({
+        title: "Error Downloading Report",
+        description: "Failed to download user report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+  
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
@@ -154,15 +216,28 @@ const UserManagement = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">User Management</h1>
-          <Button 
-            onClick={fetchUsers} 
-            variant="outline" 
-            size="sm"
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            {currentUser?.role === 'admin' && (
+              <Button 
+                onClick={downloadUserReport} 
+                variant="secondary" 
+                size="sm"
+                disabled={downloadingReport}
+              >
+                <Download className={`h-4 w-4 mr-2 ${downloadingReport ? 'animate-spin' : ''}`} />
+                Download Report
+              </Button>
+            )}
+            <Button 
+              onClick={fetchUsers} 
+              variant="outline" 
+              size="sm"
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 mb-6">

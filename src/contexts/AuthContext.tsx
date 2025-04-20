@@ -52,7 +52,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setIsLoading(true);
     try {
-      // Disable caching to ensure fresh data
+      console.log("Refreshing user profile for:", user.id);
+      
+      // Force a fresh fetch from the database without caching
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -65,12 +67,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (profile) {
+        console.log("Profile refreshed, new role:", profile.role);
         setUser({
           id: user.id,
           email: user.email,
           role: profile.role as UserRole,
         });
         console.log("User profile refreshed with role:", profile.role);
+        
+        // Notify user of role change if different
+        if (user.role !== profile.role) {
+          toast({
+            title: "Role Updated",
+            description: `Your role has been updated to ${profile.role}`,
+          });
+        }
       }
     } catch (err) {
       console.error("Error refreshing user profile:", err);

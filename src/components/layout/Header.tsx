@@ -2,15 +2,21 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, RefreshCw } from 'lucide-react';
 
 const Header = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUserProfile } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+  
+  const handleRefreshProfile = async () => {
+    if (user) {
+      await refreshUserProfile();
+    }
   };
 
   if (!user) return null;
@@ -22,6 +28,15 @@ const Header = () => {
           <span className="text-xl font-bold text-brand-orange">Swift Bites</span>
         </div>
         <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleRefreshProfile}
+            className="text-xs"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Refresh
+          </Button>
           <div className="flex items-center gap-2">
             <User className="h-5 w-5 text-muted-foreground" />
             <div>

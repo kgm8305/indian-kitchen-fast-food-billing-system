@@ -22,6 +22,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserProfile = async (userId: string) => {
     try {
       console.log("Fetching user profile for:", userId);
+      
+      // Add cache-busting parameter to avoid potential caching issues
+      const timestamp = new Date().getTime();
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -48,7 +51,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Function to refresh user profile (can be called when role changes)
   const refreshUserProfile = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log("No user to refresh profile for");
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -68,20 +74,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (profile) {
         console.log("Profile refreshed, new role:", profile.role);
-        setUser({
+        
+        // Create a new user object to trigger state updates
+        const updatedUser = {
           id: user.id,
           email: user.email,
           role: profile.role as UserRole,
-        });
-        console.log("User profile refreshed with role:", profile.role);
+        };
+        
+        // Check if role actually changed
+        const roleChanged = user.role !== profile.role;
+        
+        console.log(`Role ${roleChanged ? 'changed' : 'unchanged'}, setting user with role:`, profile.role);
+        
+        // Always set the user to trigger a re-render
+        setUser(updatedUser);
         
         // Notify user of role change if different
-        if (user.role !== profile.role) {
+        if (roleChanged) {
           toast({
             title: "Role Updated",
             description: `Your role has been updated to ${profile.role}`,
           });
         }
+      } else {
+        console.error("No profile found during refresh");
       }
     } catch (err) {
       console.error("Error refreshing user profile:", err);

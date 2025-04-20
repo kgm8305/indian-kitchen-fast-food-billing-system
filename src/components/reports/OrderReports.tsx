@@ -1,119 +1,126 @@
 
-import { useState, useMemo } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { format, subDays, startOfDay, endOfDay, subMonths } from 'date-fns';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { Calendar as CalendarIcon, Download, Search } from 'lucide-react';
+import { fetchOrdersByDateRange } from '@/utils/databaseOperations';
+import { Order, OrderStatus } from '@/types';
 import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { 
-  DownloadIcon, 
-  CalendarIcon, 
-  FilterIcon,
-  SearchIcon,
-  RefreshCw 
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { OrderStatus } from '@/types';
+  Table, 
+  TableHeader, 
+  TableRow, 
+  TableHead, 
+  TableBody, 
+  TableCell 
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { toast } from '@/hooks/use-toast';
 
 type DateRange = {
-  from: Date | undefined;
-  to: Date | undefined;
+  from: Date;
+  to?: Date | undefined;
 };
 
 const OrderReports = () => {
-  const { orders, refreshOrders, loading } = useData();
-  const { toast } = useToast();
-  const [date, setDate] = useState<DateRange>({
-    from: subMonths(new Date(), 1),
-    to: new Date()
+  const [dateRange, setDateRange] = useState<DateRange>({ 
+    from: new Date(new Date().setDate(new Date().getDate() - 30)), 
+    to: new Date() 
   });
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [downloadingReport, setDownloadingReport] = useState(false);
-
-  // Filter orders based on date range, status, and search term
-  const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
-      const orderDate = new Date(order.timestamp);
-      
-      // Date range filter
-      const afterFrom = !date.from || orderDate >= startOfDay(date.from);
-      const beforeTo = !date.to || orderDate <= endOfDay(date.to);
-      const inDateRange = afterFrom && beforeTo;
-      
-      // Status filter
-      const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-      
-      // Search term filter
-      const matchesSearch = 
-        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.items.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      return inDateRange && matchesStatus && matchesSearch;
-    }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [orders, date, statusFilter, searchTerm]);
-
-  const handleRefresh = () => {
-    refreshOrders();
-    toast({
-      title: "Data Refreshed",
-      description: "Order reports have been updated with the latest data",
-    });
-  };
-
-  const downloadOrderReport = () => {
+  
+  const fetchOrders = async () => {
+    setLoading(true);
     try {
-      setDownloadingReport(true);
+      let startDate = dateRange.from.toISOString();
+      // If no end date is set, use current date
+      let endDate = dateRange.to ? dateRange.to.toISOString() : new Date().toISOString();
       
-      // Create headers for CSV
-      const headers = [
-        'Order ID', 
-        'Date', 
-        'Time', 
-        'Customer', 
-        'Items', 
-        'Total Amount', 
-        'Status'
-      ];
+      // Adjust end date to include the entire day
+      if (dateRange.to) {
+        const adjustedEndDate = new Date(dateRange.to);
+        adjustedEndDate.setHours(23, 59, 59, 999);
+        endDate = adjustedEndDate.toISOString();
+      }
       
-      // Prepare data rows for CSV
+      const ordersData = await fetchOrdersByDateRange(startDate, endDate);
+      setOrders(ordersData);
+    } catch (error) {
+      console.error('Error fetching orders for report:', error);
+      toast({
+        title: "Error loading orders",
+        description: "Failed to load order data for report",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+  
+  const handleDateRangeChange = (range: DateRange) => {
+    // Ensure we have a complete range with both from and to dates
+    const newRange: DateRange = {
+      from: range.from,
+      to: range.to || range.from // Default to from date if to is not provided
+    };
+    setDateRange(newRange);
+  };
+  
+  const downloadReport = () => {
+    try {
+      // Filter orders based on current filters
+      const filteredOrders = getFilteredOrders();
+      
+      // Create CSV content
+      const headers = ['Order ID', 'Date', 'Customer', 'Items', 'Total Amount', 'Status'];
       const csvRows = [
-        headers.join(','),
-        ...filteredOrders.map(order => {
-          const orderDate = new Date(order.timestamp);
-          const date = format(orderDate, 'yyyy-MM-dd');
-          const time = format(orderDate, 'HH:mm:ss');
-          const customer = order.customer?.name || 'Walk-in Customer';
-          const items = order.items.map(item => `${item.quantity}x ${item.name}`).join('; ');
-          const total = order.totalAmount.toFixed(2);
-          
-          return [
-            order.id,
-            date,
-            time,
-            `"${customer}"`, // Add quotes to handle commas in names
-            `"${items}"`, // Add quotes to handle commas in item list
-            total,
-            order.status
-          ].join(',');
-        })
+        headers.join(',')
       ];
       
-      // Join rows with newlines to create CSV content
+      filteredOrders.forEach(order => {
+        const row = [
+          order.id,
+          new Date(order.timestamp).toLocaleDateString(),
+          order.customer?.name || 'Walk-in',
+          order.items.length,
+          order.totalAmount.toFixed(2),
+          order.status
+        ];
+        
+        // Escape commas in fields
+        const escapedRow = row.map(field => {
+          const stringField = String(field);
+          return stringField.includes(',') ? `"${stringField}"` : stringField;
+        });
+        
+        csvRows.push(escapedRow.join(','));
+      });
+      
       const csvContent = csvRows.join('\n');
       
-      // Create a Blob and download link
+      // Create and download the file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -130,60 +137,93 @@ const OrderReports = () => {
     } catch (error) {
       console.error('Error downloading report:', error);
       toast({
-        title: "Error Downloading Report",
-        description: "Failed to download order report. Please try again.",
-        variant: "destructive",
+        title: "Download Failed",
+        description: "Could not download the order report",
+        variant: "destructive"
       });
-    } finally {
-      setDownloadingReport(false);
     }
   };
-
-  const getStatusColor = (status: OrderStatus) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  
+  const getFilteredOrders = () => {
+    return orders.filter(order => {
+      const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+      const matchesSearch = 
+        searchTerm === '' || 
+        order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (order.customer?.name && order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      return matchesStatus && matchesSearch;
+    });
+  };
+  
+  const filteredOrders = getFilteredOrders();
+  
+  const calculateTotalSales = () => {
+    return filteredOrders.reduce((sum, order) => {
+      if (order.status !== 'cancelled') {
+        return sum + order.totalAmount;
+      }
+      return sum;
+    }, 0);
+  };
+  
+  const getStatusBadgeVariant = (status: OrderStatus) => {
+    switch(status) {
+      case 'pending': return 'secondary';
+      case 'in-progress': return 'default';
+      case 'completed': return 'outline';
+      case 'cancelled': return 'destructive';
+      default: return 'outline';
     }
   };
-
+  
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col md:flex-row gap-4 justify-between">
+        <div className="flex flex-col sm:flex-row gap-4">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="flex items-center justify-center"
+                className="justify-start text-left font-normal w-full sm:w-[300px]"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {date.from ? format(date.from, 'PP') : 'From'} - 
-                {date.to ? format(date.to, 'PP') : 'To'}
+                {dateRange.from ? (
+                  dateRange.to ? (
+                    <>
+                      {format(dateRange.from, "LLL dd, yyyy")} - {format(dateRange.to, "LLL dd, yyyy")}
+                    </>
+                  ) : (
+                    format(dateRange.from, "LLL dd, yyyy")
+                  )
+                ) : (
+                  <span>Pick a date range</span>
+                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
-                mode="range"
-                selected={date}
-                onSelect={(range) => setDate(range || {from: undefined, to: undefined})}
                 initialFocus
+                mode="range"
+                defaultMonth={dateRange.from}
+                selected={{ from: dateRange.from, to: dateRange.to }}
+                onSelect={(range) => {
+                  if (range) {
+                    handleDateRangeChange(range);
+                  }
+                }}
+                numberOfMonths={2}
               />
             </PopoverContent>
           </Popover>
           
-          <div className="w-full sm:w-48">
+          <div className="flex gap-2">
             <Select
               value={statusFilter}
               onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}
             >
-              <SelectTrigger>
-                <div className="flex items-center">
-                  <FilterIcon className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
-                </div>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
@@ -193,112 +233,35 @@ const OrderReports = () => {
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
+            
+            <Button onClick={fetchOrders} disabled={loading}>
+              {loading ? 'Loading...' : 'Apply Filters'}
+            </Button>
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <div className="flex gap-2">
           <div className="relative flex-1">
-            <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search orders..."
+              placeholder="Search by ID or customer..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
           
-          <div className="flex gap-2">
-            <Button 
-              onClick={downloadOrderReport} 
-              variant="secondary"
-              disabled={downloadingReport || filteredOrders.length === 0}
-            >
-              <DownloadIcon className={`h-4 w-4 mr-2 ${downloadingReport ? 'animate-spin' : ''}`} />
-              Download Report
-            </Button>
-            
-            <Button 
-              onClick={handleRefresh} 
-              variant="outline"
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
+          <Button 
+            variant="outline" 
+            onClick={downloadReport}
+            disabled={filteredOrders.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Download
+          </Button>
         </div>
       </div>
       
-      {/* Order Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Order List</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
-                  <tr className="text-left">
-                    <th className="font-medium p-3">Order ID</th>
-                    <th className="font-medium p-3">Date</th>
-                    <th className="font-medium p-3">Customer</th>
-                    <th className="font-medium p-3">Items</th>
-                    <th className="font-medium p-3 text-right">Total</th>
-                    <th className="font-medium p-3 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={6} className="text-center p-8">
-                        <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                        <p className="mt-2 text-muted-foreground">Loading order data...</p>
-                      </td>
-                    </tr>
-                  ) : filteredOrders.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center p-8 text-muted-foreground">
-                        No orders found matching your criteria.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredOrders.map((order) => (
-                      <tr key={order.id} className="border-t hover:bg-muted/50">
-                        <td className="p-3 font-mono text-xs">{order.id.substring(0, 12)}...</td>
-                        <td className="p-3">{format(new Date(order.timestamp), 'MMM d, yyyy HH:mm')}</td>
-                        <td className="p-3">{order.customer?.name || 'Walk-in Customer'}</td>
-                        <td className="p-3">
-                          <div className="max-w-[300px] truncate">
-                            {order.items.map((item, i) => (
-                              <span key={i} className="block truncate">
-                                {item.quantity}x {item.name}
-                              </span>
-                            )).slice(0, 2)}
-                            {order.items.length > 2 && (
-                              <span className="text-xs text-muted-foreground">
-                                +{order.items.length - 2} more items
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-3 text-right">${order.totalAmount.toFixed(2)}</td>
-                        <td className="p-3 text-center">
-                          <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getStatusColor(order.status))}>
-                            {order.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Order Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -306,60 +269,78 @@ const OrderReports = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{filteredOrders.length}</div>
-            <p className="text-xs text-muted-foreground">
-              In selected period
-            </p>
           </CardContent>
         </Card>
-        
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${calculateTotalSales().toFixed(2)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Average Order Value</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${filteredOrders.reduce((sum, order) => sum + order.totalAmount, 0).toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              From {filteredOrders.length} orders
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Status Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Completed:</span>
-                <span className="font-medium">
-                  {filteredOrders.filter(o => o.status === 'completed').length}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Pending:</span>
-                <span className="font-medium">
-                  {filteredOrders.filter(o => o.status === 'pending').length}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">In Progress:</span>
-                <span className="font-medium">
-                  {filteredOrders.filter(o => o.status === 'in-progress').length}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Cancelled:</span>
-                <span className="font-medium">
-                  {filteredOrders.filter(o => o.status === 'cancelled').length}
-                </span>
-              </div>
+              ${filteredOrders.length > 0 
+                ? (calculateTotalSales() / filteredOrders.length).toFixed(2) 
+                : '0.00'}
             </div>
           </CardContent>
         </Card>
       </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Order Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+              <p className="mt-2 text-sm text-gray-500">Loading orders...</p>
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No orders found for the selected filters
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredOrders.map(order => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-mono text-xs">{order.id.substring(0, 8)}...</TableCell>
+                      <TableCell>{new Date(order.timestamp).toLocaleDateString()}</TableCell>
+                      <TableCell>{order.customer?.name || 'Walk-in'}</TableCell>
+                      <TableCell>{order.items.length} items</TableCell>
+                      <TableCell className="text-right">${order.totalAmount.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(order.status)}>
+                          {order.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

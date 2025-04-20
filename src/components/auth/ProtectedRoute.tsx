@@ -23,12 +23,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Function to check authorization
   const checkAuthorization = async () => {
     if (isLoading) {
+      console.log("Auth is loading, waiting...");
       return; // Wait until auth is loaded
     }
 
     // Always refresh user profile when route components are loaded
     // This ensures we have the latest role information
     if (!hasCheckedAuth) {
+      console.log("First auth check, refreshing user profile");
       await refreshUserProfile();
       setHasCheckedAuth(true);
     }
@@ -75,11 +77,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       // Reset authorization on path change
       setIsAuthorized(false);
       
+      console.log(`Path changed to ${location.pathname}, refreshing user profile`);
+      
       // Always refresh user profile when the path changes
       // This ensures we have the latest role information
       refreshUserProfile().then(() => {
         // Check if user has permission for new path
-        if (allowedRoles && !allowedRoles.includes(user.role)) {
+        if (allowedRoles && user && !allowedRoles.includes(user.role)) {
           console.log(`User role ${user.role} not authorized for ${location.pathname}. Allowed roles: ${allowedRoles.join(', ')}`);
           
           toast({
@@ -96,7 +100,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           return;
         }
         
-        console.log(`User authorized with role: ${user.role} for path: ${location.pathname}`);
+        console.log(`User authorized with role: ${user?.role} for path: ${location.pathname}`);
         setIsAuthorized(true);
       });
     }

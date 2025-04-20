@@ -101,7 +101,7 @@ const UserManagement = () => {
         throw new Error(`Database error: ${error.message}`);
       }
       
-      console.log('Role update successful');
+      console.log('Role update successful in database');
       
       // Update the local state immediately
       setUsers(prevUsers => 
@@ -118,7 +118,38 @@ const UserManagement = () => {
       // If the user being updated is the current user, refresh their profile
       if (currentUser && userId === currentUser.id) {
         console.log("Updating current user's role, refreshing profile");
-        await refreshUserProfile();
+        
+        // Force a short delay to ensure the database update completes
+        setTimeout(async () => {
+          await refreshUserProfile();
+          
+          // Check if the profile was actually updated
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .single();
+            
+          if (error) {
+            console.error("Error verifying role update:", error);
+          } else {
+            console.log("Verified role in database is now:", data.role);
+            
+            // If the role in the database doesn't match the new role, try again
+            if (data.role !== newRole) {
+              console.warn("Role update didn't take effect, retrying...");
+              
+              // Try one more direct update
+              await supabase
+                .from('profiles')
+                .update({ role: newRole })
+                .eq('id', userId);
+                
+              // Refresh the user profile again
+              await refreshUserProfile();
+            }
+          }
+        }, 500);
       }
       
       // Force refresh to ensure we get the latest data

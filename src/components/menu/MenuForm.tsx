@@ -15,7 +15,7 @@ interface MenuFormProps {
 }
 
 const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
-  const { addMenuItem, updateMenuItem, refreshMenuItems } = useData();
+  const { addMenuItem, updateMenuItem } = useData();
   const [name, setName] = useState(item?.name || '');
   const [description, setDescription] = useState(item?.description || '');
   const [price, setPrice] = useState(item?.price?.toString() || '');
@@ -90,7 +90,6 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
     try {
       if (item) {
         // Update existing item
-        console.log("Updating menu item:", item.id, menuItemData);
         const success = await updateMenuItem(item.id, menuItemData);
         
         if (success) {
@@ -99,8 +98,7 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
             description: `${name} has been updated successfully.`
           });
           
-          // Force refresh of menu items to ensure UI is in sync with database
-          await refreshMenuItems();
+          // Close form and trigger refresh
           onClose();
         } else {
           throw new Error("Failed to update menu item");
@@ -114,8 +112,7 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
           description: `${name} has been added successfully.`
         });
         
-        // Force refresh of menu items to ensure UI is in sync with database
-        await refreshMenuItems();
+        // Close form and trigger refresh
         onClose();
       }
     } catch (error: any) {

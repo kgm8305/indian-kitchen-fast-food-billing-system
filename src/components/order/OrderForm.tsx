@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useData } from '@/contexts/DataContext';
+import { useData, FOOD_CATEGORIES } from '@/contexts/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,10 +21,12 @@ const OrderForm = () => {
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const categories = ['All', ...new Set(menuItems.map(item => item.category))];
+  // Only use the fixed allowed categories for UI tabs/filters
+  const categories = ['All', ...FOOD_CATEGORIES];
   
-  const filteredItems = activeCategory === 'All' 
-    ? menuItems 
+  // Only show/filter menu items based on the allowed categories (if category is not "All")
+  const filteredItems = activeCategory === 'All'
+    ? menuItems.filter(item => FOOD_CATEGORIES.includes(item.category))
     : menuItems.filter(item => item.category === activeCategory);
   
   const handleAddToCart = (item: MenuItem) => {

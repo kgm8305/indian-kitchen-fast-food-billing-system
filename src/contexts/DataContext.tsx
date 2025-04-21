@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MenuItem, Order, OrderStatus } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -10,7 +9,7 @@ export const FOOD_CATEGORIES = [
   'Noodles FastFood',
   'Tiffins',
   'Starters',
-  "Beverages",
+  'Beverages',
   "Biryani's"
 ];
 

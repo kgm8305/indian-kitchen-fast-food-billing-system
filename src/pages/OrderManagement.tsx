@@ -15,12 +15,16 @@ import { Search, Filter, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const OrderManagement = () => {
+  console.log("Rendering OrderManagement");
+  
   const { orders, refreshOrders, loading } = useData();
+  console.log("Context data in OrderManagement:", { orders, loading });
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   
   useEffect(() => {
-    // Only refresh orders when component mounts, not continuously
+    console.log("OrderManagement useEffect running, calling refreshOrders");
     refreshOrders();
     // Remove dependency on refreshOrders to prevent continuous refreshing
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

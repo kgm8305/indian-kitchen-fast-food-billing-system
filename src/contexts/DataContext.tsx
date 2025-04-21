@@ -33,18 +33,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Initial data loading
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        // Load menu items
         const items = await fetchMenuItems();
         if (items.length > 0) {
           setMenuItems(items);
         }
         
-        // Load orders
         const ordersData = await fetchOrders();
         setOrders(ordersData);
       } catch (error) {
@@ -88,7 +85,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       const newItem = await addMenuItemToDatabase(item);
       if (newItem) {
-        // Add to local state
         setMenuItems(prev => [...prev, newItem]);
         
         toast({
@@ -96,7 +92,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: `${item.name} has been added to the menu.`,
         });
         
-        // Refresh to ensure consistency with database
         await refreshMenuItems();
       }
     } catch (error) {
@@ -120,7 +115,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Database update result:', success);
       
       if (success) {
-        // Update local state
         setMenuItems(prev => 
           prev.map(item => 
             item.id === id ? { ...item, ...updates } : item
@@ -132,7 +126,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: "Menu item has been updated.",
         });
         
-        // Force refresh from database to ensure local state matches database
         await refreshMenuItems();
         return true;
       }
@@ -162,7 +155,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: `${itemName || 'Item'} has been removed from the menu.`,
         });
         
-        // Refresh to ensure consistency with database
         await refreshMenuItems();
       }
     } catch (error) {
@@ -179,11 +171,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const createOrder = async (orderData: Omit<Order, 'id' | 'timestamp'>) => {
     try {
-      // Create order in the database
       const newOrder = await createOrderInDatabase(orderData);
       
       if (newOrder) {
-        // Update local state
         setOrders(prev => [newOrder, ...prev]);
         
         toast({
@@ -208,11 +198,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateOrderStatus = async (id: string, status: OrderStatus) => {
     try {
       setLoading(true);
-      // Update order status in the database
       const success = await updateOrderStatusInDatabase(id, status);
       
       if (success) {
-        // Update local state
         setOrders(prev => 
           prev.map(order => 
             order.id === id ? { ...order, status } : order

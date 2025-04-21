@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, RefreshCw } from 'lucide-react';
+import { useBranding } from '@/contexts/BrandingContext';
 
 const Header = () => {
   const { user, logout, refreshUserProfile } = useAuth();
+  const { projectName } = useBranding();
   const navigate = useNavigate();
 
   // Early return with null if no user context is available
@@ -27,10 +29,12 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white border-b sticky top-0 z-10">
+    <header className="bg-white dark:bg-[#222] border-b sticky top-0 z-10">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <span className="text-xl font-bold text-brand-orange">Swift Bites</span>
+          <span className="text-xl font-bold text-brand-orange">
+            {projectName}
+          </span>
         </div>
         <div className="flex items-center gap-4">
           <Button 

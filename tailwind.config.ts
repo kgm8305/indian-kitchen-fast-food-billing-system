@@ -63,7 +63,6 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom colors for our food ordering app
 				'brand-orange': '#F97316',
 				'brand-teal': '#0D9488',
 			},
@@ -98,3 +97,4 @@ export default {
 	},
 	plugins: [require("tailwindcss-animate")],
 } satisfies Config;
+

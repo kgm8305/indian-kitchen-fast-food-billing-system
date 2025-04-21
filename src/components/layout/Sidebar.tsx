@@ -11,7 +11,8 @@ import {
   BarChart, 
   MenuSquare,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -61,6 +62,12 @@ const Sidebar = () => {
       href: '/reports', 
       roles: ['admin'] 
     },
+    {
+      label: 'Settings',
+      icon: <SettingsIcon className="h-5 w-5" />,
+      href: '/settings',
+      roles: ['admin']
+    }
   ];
 
   // Filter items based on user role - strictly enforce role-based access
@@ -76,14 +83,14 @@ const Sidebar = () => {
 
   return (
     <div className={cn(
-      "bg-gray-50 min-h-screen p-4 border-r transition-all duration-300 flex flex-col relative",
+      "bg-gray-50 dark:bg-[#102030] min-h-screen p-4 border-r transition-all duration-300 flex flex-col relative",
       collapsed ? "w-20" : "w-64"
     )}>
       <Button 
         variant="ghost" 
         size="icon"
         onClick={toggleSidebar}
-        className="absolute -right-3 top-6 h-6 w-6 bg-white border rounded-full shadow-md hover:bg-gray-100"
+        className="absolute -right-3 top-6 h-6 w-6 bg-white dark:bg-[#222] border rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-[#333]"
       >
         {collapsed ? 
           <ChevronRight className="h-4 w-4" /> : 

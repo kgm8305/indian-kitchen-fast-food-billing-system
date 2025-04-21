@@ -1,7 +1,7 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBranding } from '@/contexts/BrandingContext';
 import { UserRole } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,9 +16,17 @@ const LoginForm = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
+  const [showNameEditor, setShowNameEditor] = useState(false);
   
   const { login } = useAuth();
+  const { projectName, setProjectName } = useBranding();
+  const [customName, setCustomName] = useState(projectName);
+  
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setCustomName(projectName);
+  }, [projectName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,13 +36,11 @@ const LoginForm = () => {
     
     try {
       if (isSigningUp) {
-        // Handle sign up
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
-              // Default role for new users is cashier
               role: 'cashier'
             }
           }
@@ -49,13 +55,10 @@ const LoginForm = () => {
         
         setIsSigningUp(false);
       } else {
-        // Handle login - only validate credentials, don't manually set role
         console.log(`Attempting to login with email: ${email}`);
         
-        // Important: When logging in, we don't specify a role - we use the stored role
         await login(email, password);
         
-        // Navigate after successful login
         navigate('/dashboard');
       }
     } catch (error) {
@@ -76,10 +79,40 @@ const LoginForm = () => {
     }
   };
 
+  const handleSaveName = () => {
+    if (customName.trim()) {
+      setProjectName(customName.trim());
+      toast({
+        title: "Project name updated",
+        description: "The new name will be displayed across all dashboards.",
+      });
+      setShowNameEditor(false);
+    }
+  };
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Swift Bites</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center cursor-pointer" onClick={() => setShowNameEditor(prev => !prev)}>
+          {projectName}
+        </CardTitle>
+        {showNameEditor && (
+          <div className="flex items-center gap-2 mt-2">
+            <Input 
+              value={customName}
+              onChange={(e) => setCustomName(e.target.value)}
+              placeholder="Enter new name"
+              className="flex-1"
+              maxLength={40}
+            />
+            <Button 
+              onClick={handleSaveName}
+              size="sm"
+            >
+              Save
+            </Button>
+          </div>
+        )}
         <CardDescription className="text-center">
           {isSigningUp ? "Create a new account" : "Enter your credentials to access the system"}
         </CardDescription>

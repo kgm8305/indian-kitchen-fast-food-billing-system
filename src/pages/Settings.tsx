@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useThemeMode } from "@/contexts/ThemeContext";
@@ -7,6 +6,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sun, Moon, Settings as SettingsIcon } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const Settings = () => {
   const { user } = useAuth();
@@ -15,6 +15,10 @@ const Settings = () => {
 
   const [name, setName] = useState(projectName);
   const isAdmin = user?.role === "admin";
+
+  useEffect(() => {
+    setName(projectName);
+  }, [projectName]);
 
   if (!isAdmin) {
     return (
@@ -29,7 +33,15 @@ const Settings = () => {
 
   const handleNameChange = (e: React.FormEvent) => {
     e.preventDefault();
-    setProjectName(name.trim() ? name : "Indian Kitchen");
+    if (name.trim()) {
+      setProjectName(name.trim());
+      toast({
+        title: "Project name updated",
+        description: "The new name will be displayed across all dashboards.",
+      });
+    } else {
+      setName("Indian Kitchen");
+    }
   };
 
   return (

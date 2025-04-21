@@ -110,7 +110,7 @@ const ManagerDashboard = () => {
                         <span>
                           {item.quantity}x {item.name}
                         </span>
-                        <span>${item.subtotal.toFixed(2)}</span>
+                        <span>₹{item.subtotal.toFixed(2)}</span>
                       </div>
                     ))}
                     <div className="flex justify-between font-bold pt-2 border-t">

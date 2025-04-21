@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import MainLayout from '@/components/layout/MainLayout';

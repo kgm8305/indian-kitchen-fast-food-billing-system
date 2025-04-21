@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -96,7 +95,7 @@ const OrderItem: React.FC<OrderItemProps> = ({ order }) => {
               {isExpanded ? 'Hide details' : `${order.items.length} items - Show details`}
             </Button>
             <div className="font-bold">
-              Total: ${order.totalAmount.toFixed(2)}
+              Total: ₹{order.totalAmount.toFixed(2)}
             </div>
           </div>
           
@@ -105,7 +104,7 @@ const OrderItem: React.FC<OrderItemProps> = ({ order }) => {
               {order.items.map((item, idx) => (
                 <div key={idx} className="flex justify-between text-sm">
                   <span>{item.quantity}x {item.name}</span>
-                  <span>${item.subtotal.toFixed(2)}</span>
+                  <span>₹{item.subtotal.toFixed(2)}</span>
                 </div>
               ))}
             </div>

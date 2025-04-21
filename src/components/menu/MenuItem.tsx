@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';

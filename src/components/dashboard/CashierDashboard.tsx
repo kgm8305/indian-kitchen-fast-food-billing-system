@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -19,19 +18,16 @@ const CashierDashboard = () => {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   
   useEffect(() => {
-    // Only refresh orders on component mount, not continuously
     refreshOrders();
     setLastRefresh(new Date());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
-  // Get recent orders for this cashier
   const recentOrders = orders
     .filter(order => order.status !== 'cancelled')
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, 10);
 
-  // Categorize orders by status
   const pendingOrders = recentOrders.filter(order => order.status === 'pending');
   const inProgressOrders = recentOrders.filter(order => order.status === 'in-progress');
   const completedOrders = recentOrders.filter(order => order.status === 'completed').slice(0, 5);
@@ -80,7 +76,6 @@ const CashierDashboard = () => {
         </div>
       </div>
       
-      {/* Order Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -118,7 +113,6 @@ const CashierDashboard = () => {
         </Card>
       </div>
 
-      {/* Orders Ready for Pickup */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Ready for Pickup</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -168,7 +162,6 @@ const CashierDashboard = () => {
         </div>
       </div>
       
-      {/* Recent Completed Orders */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Recently Completed</h2>
         <div className="overflow-x-auto bg-white rounded-lg shadow">
@@ -208,7 +201,7 @@ const CashierDashboard = () => {
                       {order.items.reduce((sum, item) => sum + item.quantity, 0)} items
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      ${order.totalAmount.toFixed(2)}
+                      ₹{order.totalAmount.toFixed(2)}
                     </td>
                   </tr>
                 ))

@@ -1,4 +1,3 @@
-
 import { useData } from '@/contexts/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -116,7 +115,7 @@ const ManagerDashboard = () => {
                     ))}
                     <div className="flex justify-between font-bold pt-2 border-t">
                       <span>Total</span>
-                      <span>${order.totalAmount.toFixed(2)}</span>
+                      <span>₹{order.totalAmount.toFixed(2)}</span>
                     </div>
                   </div>
                   <div className="flex gap-2 mt-4">

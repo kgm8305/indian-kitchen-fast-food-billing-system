@@ -26,7 +26,6 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Initialize image preview when component mounts
     if (item?.imageUrl) {
       setImagePreview(item.imageUrl);
     }
@@ -48,9 +47,8 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
   };
 
   const validateImage = (url: string): boolean => {
-    if (!url.trim()) return true; // Empty is valid since it's optional
+    if (!url.trim()) return true;
     
-    // Accept any URL format as valid
     return true;
   };
 
@@ -68,7 +66,7 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
       }
     } else {
       setImagePreview('');
-      setErrors(prev => ({ ...prev, imageUrl: '' })); // Clear error if empty
+      setErrors(prev => ({ ...prev, imageUrl: '' }));
     }
   };
 
@@ -89,7 +87,6 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
     
     try {
       if (item) {
-        // Update existing item
         const success = await updateMenuItem(item.id, menuItemData);
         
         if (success) {
@@ -98,13 +95,11 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
             description: `${name} has been updated successfully.`
           });
           
-          // Close form and trigger refresh
           onClose();
         } else {
           throw new Error("Failed to update menu item");
         }
       } else {
-        // Add new item
         await addMenuItem(menuItemData);
         
         toast({
@@ -112,7 +107,6 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
           description: `${name} has been added successfully.`
         });
         
-        // Close form and trigger refresh
         onClose();
       }
     } catch (error: any) {
@@ -159,7 +153,7 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="price">Price ($)</Label>
+            <Label htmlFor="price">Price (₹)</Label>
             <Input
               id="price"
               type="number"
@@ -167,7 +161,7 @@ const MenuForm: React.FC<MenuFormProps> = ({ item, onClose }) => {
               min="0"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              placeholder="9.99"
+              placeholder="99.99"
               className={errors.price ? 'border-red-500' : ''}
             />
             {errors.price && <p className="text-xs text-red-500">{errors.price}</p>}

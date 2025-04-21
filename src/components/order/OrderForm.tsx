@@ -178,8 +178,8 @@ const OrderForm = () => {
                 <tr key={index} className="border-b border-dashed">
                   <td className="py-1">{item.name}</td>
                   <td className="py-1 text-center">{item.quantity}</td>
-                  <td className="py-1 text-right">${item.price.toFixed(2)}</td>
-                  <td className="py-1 text-right">${item.subtotal.toFixed(2)}</td>
+                  <td className="py-1 text-right">₹{item.price.toFixed(2)}</td>
+                  <td className="py-1 text-right">₹{item.subtotal.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -189,7 +189,7 @@ const OrderForm = () => {
         <div className="mb-6 text-right">
           <div className="flex justify-between font-bold text-lg">
             <span>Total</span>
-            <span>${currentOrder.totalAmount.toFixed(2)}</span>
+            <span>₹{currentOrder.totalAmount.toFixed(2)}</span>
           </div>
         </div>
         
@@ -252,7 +252,7 @@ const OrderForm = () => {
                         <div className="flex-1 p-3">
                           <div className="flex justify-between">
                             <h3 className="font-medium line-clamp-1">{item.name}</h3>
-                            <span className="font-bold">${item.price.toFixed(2)}</span>
+                            <span className="font-bold">₹{item.price.toFixed(2)}</span>
                           </div>
                           <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{item.description}</p>
                           <Button 
@@ -334,10 +334,10 @@ const OrderForm = () => {
                       </div>
                       <div className="flex-1 mx-2">
                         <div className="text-sm font-medium">{item.name}</div>
-                        <div className="text-xs text-muted-foreground">${item.price.toFixed(2)} each</div>
+                        <div className="text-xs text-muted-foreground">₹{item.price.toFixed(2)} each</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">${item.subtotal.toFixed(2)}</div>
+                        <div className="font-medium">₹{item.subtotal.toFixed(2)}</div>
                         <Button 
                           variant="ghost" 
                           size="icon"
@@ -355,7 +355,7 @@ const OrderForm = () => {
               <div className="mt-4 pt-2 border-t">
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span>${calculateTotal().toFixed(2)}</span>
+                  <span>₹{calculateTotal().toFixed(2)}</span>
                 </div>
               </div>
               

@@ -48,7 +48,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item }) => {
         <CardHeader className="pt-4 pb-2">
           <CardTitle className="flex justify-between items-center">
             <span className="line-clamp-1 font-medium">{item.name}</span>
-            <span className="text-lg font-bold">${item.price.toFixed(2)}</span>
+            <span className="text-lg font-bold">₹{item.price.toFixed(2)}</span>
           </CardTitle>
           <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">{item.category}</span>
         </CardHeader>

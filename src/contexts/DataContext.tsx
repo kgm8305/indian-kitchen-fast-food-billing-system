@@ -6,7 +6,12 @@ import { fetchMenuItems, fetchOrders, createOrderInDatabase, updateOrderStatusIn
 
 // Sample food categories
 export const FOOD_CATEGORIES = [
-  'Burger', 'Pizza', 'Sides', 'Drinks', 'Dessert'
+  'Rice FastFood',
+  'Noodles FastFood',
+  'Tiffins',
+  'Starters',
+  "Beverages",
+  "Biryani's"
 ];
 
 interface DataContextType {
